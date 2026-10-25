@@ -287,6 +287,7 @@ Format:
                         "priority": "High",
                         "path": f"{base_url}/assessment",
                         "expectation_source": "deterministic_invariant",
+                        "baseline_id": "BL-INV-02",
                         "preconditions": "Candidate is on assessment invitation form.",
                         "test_data": {"access_code": "x", "expected_rejection": True},
                         "steps": [
@@ -336,6 +337,7 @@ Format:
                         "priority": "High",
                         "path": f"{base_url}/assessment/test",
                         "expectation_source": "deterministic_invariant",
+                        "baseline_id": "BL-INV-05",
                         "preconditions": "Candidate has answered questions in examination view.",
                         "test_data": {"q1": "B"},
                         "steps": [
@@ -358,6 +360,7 @@ Format:
                         "priority": "High",
                         "path": f"{base_url}/assessment/test",
                         "expectation_source": "deterministic_invariant",
+                        "baseline_id": "BL-INV-03",
                         "preconditions": "Candidate is ready to submit completed assessment.",
                         "test_data": {"action": "duplicate_submit"},
                         "steps": [
@@ -382,6 +385,7 @@ Format:
                         "priority": "Critical",
                         "path": f"{base_url}/assessment/submit",
                         "expectation_source": "deterministic_invariant",
+                        "baseline_id": "BL-INV-06",
                         "preconditions": "Candidate submits 3 correct answers (q1=B, q2=A, q3=A).",
                         "test_data": {"q1": "B", "q2": "A", "q3": "A", "expected_score": "100%"},
                         "steps": [
@@ -406,6 +410,7 @@ Format:
                         "priority": "Critical",
                         "path": f"{base_url}/assessment/recruiter/results",
                         "expectation_source": "deterministic_invariant",
+                        "baseline_id": "BL-INV-04",
                         "preconditions": "Visitor is in clean incognito context without recruiter session.",
                         "test_data": {"target": "/assessment/recruiter/results"},
                         "steps": [
@@ -456,6 +461,7 @@ Format:
                         "priority": "High",
                         "path": f"{qb_root}/cart",
                         "expectation_source": "deterministic_invariant",
+                        "baseline_id": "BL-INV-01",
                         "preconditions": "Cart contains items from Artisan Pizza Co.",
                         "test_data": {"item_id": "ITM-01", "expected_subtotal": "$29.98"},
                         "steps": [
@@ -479,6 +485,7 @@ Format:
                         "priority": "High",
                         "path": f"{qb_root}/checkout/address",
                         "expectation_source": "deterministic_invariant",
+                        "baseline_id": "BL-INV-02",
                         "preconditions": "Customer has items in cart and proceeds to address entry.",
                         "test_data": {"postal_code": "1", "expected_rejection": True},
                         "steps": [
@@ -507,6 +514,7 @@ Format:
                         "priority": "High",
                         "path": f"{qb_root}/checkout/payment",
                         "expectation_source": "deterministic_invariant",
+                        "baseline_id": "BL-INV-03",
                         "preconditions": "Customer is on payment simulation step with valid order details.",
                         "test_data": {"action": "double_click_pay"},
                         "steps": [
@@ -601,6 +609,7 @@ Format:
                         "priority": "High",
                         "path": f"{clean_url}/register",
                         "expectation_source": "deterministic_invariant",
+                        "baseline_id": "BL-INV-02",
                         "preconditions": "Visitor is on registration form.",
                         "test_data": {"email": "invaliduser_without_at"},
                         "steps": [
@@ -627,6 +636,7 @@ Format:
                         "priority": "High",
                         "path": f"{clean_url}/cart",
                         "expectation_source": "deterministic_invariant",
+                        "baseline_id": "BL-INV-01",
                         "preconditions": "Product PRD-01 ($129.99) added to shopping cart.",
                         "test_data": {"unit_price": 129.99, "quantity": 2, "expected_subtotal": 259.98},
                         "steps": [
@@ -650,6 +660,7 @@ Format:
                         "priority": "High",
                         "path": f"{clean_url}/checkout",
                         "expectation_source": "deterministic_invariant",
+                        "baseline_id": "BL-INV-02",
                         "preconditions": "Cart contains items and visitor is on checkout view.",
                         "test_data": {"postal_code": ""},
                         "steps": [
@@ -679,6 +690,7 @@ Format:
                         "priority": "Critical",
                         "path": f"{clean_url}/account",
                         "expectation_source": "deterministic_invariant",
+                        "baseline_id": "BL-INV-04",
                         "preconditions": "Visitor has no active authentication cookie or session.",
                         "test_data": {"target": "/account"},
                         "steps": [
@@ -724,6 +736,7 @@ Format:
                         "priority": "High",
                         "path": f"{clean_url}/checkout",
                         "expectation_source": "deterministic_invariant",
+                        "baseline_id": "BL-INV-03",
                         "preconditions": "Cart contains items ready for order placement.",
                         "test_data": {"action": "place_order"},
                         "steps": [

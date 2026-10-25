@@ -89,13 +89,25 @@ DEFAULT_BASELINES = [
         "expected_state": {"state_persists_on_refresh": True},
         "is_approved": True,
         "notes": "Transient disconnection or page reloads must preserve candidate answers and cart state."
+    },
+    {
+        "id": "BL-INV-06",
+        "name": "Assessment Score Calculation Invariant Against Ground Truth Answer Key",
+        "target_domain": "assesspro.local",
+        "category": "Business logic and calculations",
+        "source_type": "deterministic_invariant",
+        "version": "v1.0",
+        "rule_definition": {"score_formula": "(correct_answers / total_questions) * 100", "tolerance": 0.0},
+        "expected_state": {"score_matches_answer_key": True},
+        "is_approved": True,
+        "notes": "Candidate test score calculation must mathematically match evaluated question answers."
     }
 ]
 
 def ensure_seeded_baselines(db: Session):
-    count = db.query(BehavioralBaseline).count()
-    if count == 0:
-        for b in DEFAULT_BASELINES:
+    for b in DEFAULT_BASELINES:
+        existing = db.query(BehavioralBaseline).filter(BehavioralBaseline.id == b["id"]).first()
+        if not existing:
             rec = BehavioralBaseline(
                 id=b["id"],
                 name=b["name"],
@@ -109,7 +121,7 @@ def ensure_seeded_baselines(db: Session):
                 notes=b["notes"]
             )
             db.add(rec)
-        db.commit()
+    db.commit()
 
 # ----------------- Health & Config Status -----------------
 
@@ -327,6 +339,7 @@ def list_test_runs(
             mode=r.mode,
             test_mode=getattr(r, "test_mode", "universal_exploratory") or "universal_exploratory",
             baseline_profile=getattr(r, "baseline_profile", "default") or "default",
+            objectives=getattr(r, "objectives", []) or [],
             start_time=r.start_time.isoformat() if r.start_time else "",
             end_time=r.end_time.isoformat() if r.end_time else None,
             duration_sec=r.duration_sec,
@@ -352,6 +365,7 @@ def get_test_run(run_id: str, db: Session = Depends(get_db)):
         mode=r.mode,
         test_mode=getattr(r, "test_mode", "universal_exploratory") or "universal_exploratory",
         baseline_profile=getattr(r, "baseline_profile", "default") or "default",
+        objectives=getattr(r, "objectives", []) or [],
         start_time=r.start_time.isoformat() if r.start_time else "",
         end_time=r.end_time.isoformat() if r.end_time else None,
         duration_sec=r.duration_sec,

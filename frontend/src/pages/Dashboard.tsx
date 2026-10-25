@@ -54,29 +54,37 @@ interface TargetPreset {
   badge: string;
   url: string;
   desc: string;
+  baseline_profile: string;
+  objectives: string[];
 }
 
 const TARGET_PRESETS: TargetPreset[] = [
-  {
-    id: 'quickbite',
-    name: 'QuickBite Food Delivery',
-    badge: '5 Seeded Defects',
-    url: 'http://127.0.0.1:5001/quickbite',
-    desc: 'Multi-step food order flow with cart calculation, coupon, and address validation'
-  },
   {
     id: 'assesspro',
     name: 'AssessPro Exam Platform',
     badge: '5 Seeded Defects',
     url: 'http://127.0.0.1:5001/assesspro',
-    desc: 'Online testing with timer, palette navigation, state persistence, and score calculation'
+    desc: 'Online testing with timer, palette navigation, state persistence, and score calculation',
+    baseline_profile: 'assessment',
+    objectives: ['Functional testing', 'Form validation', 'Business-rule testing', 'Negative testing']
+  },
+  {
+    id: 'quickbite',
+    name: 'QuickBite Food Delivery',
+    badge: '5 Seeded Defects',
+    url: 'http://127.0.0.1:5001/quickbite',
+    desc: 'Multi-step food order flow with cart calculation, coupon, and address validation',
+    baseline_profile: 'ecommerce',
+    objectives: ['Functional testing', 'Business logic and calculations', 'Form validation and input boundaries', 'Transaction and workflow integrity']
   },
   {
     id: 'devstore',
     name: 'DevStore E-Commerce',
     badge: '5 Seeded Defects',
     url: 'http://127.0.0.1:5001',
-    desc: 'E-commerce store with email format validation, cart subtotal, and checkout flow'
+    desc: 'E-commerce store with email format validation, cart subtotal, and checkout flow',
+    baseline_profile: 'ecommerce',
+    objectives: ['Functional testing', 'Form validation', 'Business-rule testing', 'Negative testing']
   }
 ];
 
@@ -286,10 +294,20 @@ export const Dashboard: React.FC = () => {
 
     try {
       const preset = TARGET_PRESETS.find(p => p.url === trimmedUrl);
+      const baselineProfile = preset
+        ? preset.baseline_profile
+        : (trimmedUrl.includes('assess') || trimmedUrl.includes('exam') ? 'assessment' : (trimmedUrl.includes('food') || trimmedUrl.includes('shop') || trimmedUrl.includes('store') ? 'ecommerce' : 'universal'));
+      
+      const objectives = preset
+        ? preset.objectives
+        : ['Functional testing', 'Form validation', 'Business-rule testing', 'Negative testing'];
+
       const res = await createRun({
         target_url: trimmedUrl,
         description: preset ? preset.desc : `Autonomous verification run on ${trimmedUrl}`,
-        objectives: ['Functional testing', 'Form validation', 'Business-rule testing', 'Negative testing'],
+        objectives: objectives,
+        baseline_profile: baselineProfile,
+        test_mode: 'deep_verification',
         mode: 'demo'
       });
 
@@ -822,6 +840,45 @@ export const Dashboard: React.FC = () => {
                     {activeRun?.findings_count || 0}
                   </div>
                   <div className="text-[10px] text-rose-700">With annotated evidence</div>
+                </div>
+              </div>
+
+              {/* Active Run Baseline Profile & Auto-Selected Objectives */}
+              <div className="mt-3 bg-slate-50 p-3 rounded-xl border border-slate-200 text-xs space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="text-[10px] uppercase font-bold text-slate-500 flex items-center gap-1">
+                    <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+                    <span>Applied Baseline Profile</span>
+                  </div>
+                  <span className="text-[10px] px-2 py-0.5 rounded-full font-semibold uppercase bg-emerald-100 text-emerald-800 border border-emerald-300">
+                    {activeRun?.baseline_profile === 'assessment'
+                      ? 'AssessPro / iMocha Baseline'
+                      : activeRun?.baseline_profile === 'ecommerce'
+                      ? 'E-Commerce / Food Baseline'
+                      : activeRun?.baseline_profile === 'universal'
+                      ? 'Universal Invariants'
+                      : (activeRun?.baseline_profile || 'Default Invariants')}
+                  </span>
+                </div>
+
+                <div>
+                  <div className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1 flex items-center gap-1">
+                    <Layers className="w-3 h-3 text-emerald-600" />
+                    <span>Auto-Selected Objectives</span>
+                  </div>
+                  <div className="flex flex-wrap gap-1">
+                    {(activeRun?.objectives && activeRun.objectives.length > 0
+                      ? activeRun.objectives
+                      : ['Functional testing', 'Form validation', 'Business-rule testing', 'Negative testing']
+                    ).map((obj: string) => (
+                      <span
+                        key={obj}
+                        className="text-[10px] px-2 py-0.5 bg-white border border-slate-200 rounded text-slate-700 font-medium"
+                      >
+                        ✓ {obj}
+                      </span>
+                    ))}
+                  </div>
                 </div>
               </div>
 

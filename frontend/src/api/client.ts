@@ -13,6 +13,9 @@ export interface RunSummary {
   description: string;
   status: string;
   mode: string;
+  test_mode?: string;
+  baseline_profile?: string;
+  objectives?: string[];
   start_time: string;
   end_time?: string;
   duration_sec: number;

@@ -183,6 +183,7 @@ class RunSummaryResponse(BaseModel):
     mode: str
     test_mode: str = "universal_exploratory"
     baseline_profile: str = "default"
+    objectives: List[str] = []
     start_time: str
     end_time: Optional[str] = None
     duration_sec: float

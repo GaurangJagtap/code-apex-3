@@ -68,8 +68,8 @@ const DEMO_PRESETS: DemoTargetPreset[] = [
 export const NewRun: React.FC = () => {
   const navigate = useNavigate();
 
-  const [targetUrl, setTargetUrl] = useState('http://127.0.0.1:5001/assessment');
-  const [activePreset, setActivePreset] = useState<string>('assessment');
+  const [targetUrl, setTargetUrl] = useState('http://127.0.0.1:5001/assesspro');
+  const [activePreset, setActivePreset] = useState<string>('assesspro');
   const [description, setDescription] = useState(DEMO_PRESETS[0].description);
   const [testMode, setTestMode] = useState<'universal_exploratory' | 'deep_verification'>('deep_verification');
   const [baselineProfile, setBaselineProfile] = useState<string>('assessment');
@@ -83,12 +83,7 @@ export const NewRun: React.FC = () => {
     'Boundary testing',
     'Regression testing',
   ];
-  const [selectedObjectives, setSelectedObjectives] = useState<string[]>([
-    'Functional testing',
-    'Form validation',
-    'Business-rule testing',
-    'Negative testing'
-  ]);
+  const [selectedObjectives, setSelectedObjectives] = useState<string[]>(DEMO_PRESETS[0].objectives);
 
   const [maxPages, setMaxPages] = useState(10);
   const [maxActions, setMaxActions] = useState(30);
@@ -255,8 +250,28 @@ export const NewRun: React.FC = () => {
               required
               value={targetUrl}
               onChange={e => {
-                setTargetUrl(e.target.value);
-                setActivePreset('custom');
+                const val = e.target.value;
+                setTargetUrl(val);
+                const matched = DEMO_PRESETS.find(p => p.url === val || (val.length > 10 && val.includes(p.id)));
+                if (matched) {
+                  setActivePreset(matched.id);
+                  setDescription(matched.description);
+                  setSelectedObjectives(matched.objectives);
+                  if (matched.baseline_profile) setBaselineProfile(matched.baseline_profile);
+                } else {
+                  setActivePreset('custom');
+                  // Smart auto-select of baseline rules for any custom site
+                  if (val.includes('assess') || val.includes('exam') || val.includes('test')) {
+                    setBaselineProfile('assessment');
+                    setSelectedObjectives(['Functional testing', 'Form validation', 'Business-rule testing', 'Negative testing']);
+                  } else if (val.includes('shop') || val.includes('store') || val.includes('cart') || val.includes('food') || val.includes('bite')) {
+                    setBaselineProfile('ecommerce');
+                    setSelectedObjectives(['Functional testing', 'Form validation', 'Business-rule testing', 'Boundary testing']);
+                  } else {
+                    setBaselineProfile('universal');
+                    setSelectedObjectives(['Functional testing', 'Form validation', 'Navigation testing']);
+                  }
+                }
               }}
               className="w-full px-3.5 py-2 text-sm border border-[#cbd5e1] rounded-lg focus:outline-none focus:border-[#047857] focus:ring-1 focus:ring-[#047857] font-mono"
               placeholder="https://example.com or http://localhost:3000"
@@ -363,8 +378,8 @@ export const NewRun: React.FC = () => {
               onChange={e => setBaselineProfile(e.target.value)}
               className="w-full px-3.5 py-2 text-xs border border-[hsl(var(--border))] rounded-lg bg-[hsl(var(--secondary))]/30 focus:outline-none focus:ring-1 focus:ring-[hsl(var(--ring))]"
             >
-              <option value="assessment">iMocha Assessment Platform (Session Recovery, Invariant Scoring, Idempotency)</option>
-              <option value="ecommerce">E-Commerce DevStore (Cart Math, Address Rules, Order Idempotency, Access Control)</option>
+              <option value="assessment">AssessPro / iMocha Assessment Baseline (Answer Refresh Persistence, Score Invariants, Submission Idempotency)</option>
+              <option value="ecommerce">E-Commerce DevStore & QuickBite Baseline (Cart Math, Address Rules, Order Idempotency, Access Control)</option>
               <option value="universal">Universal Web Invariants (Navigation Transitions, Console Integrity, Form Acceptance)</option>
               <option value="none">Provisional / Exploratory Only (No Seeded Baseline)</option>
             </select>
