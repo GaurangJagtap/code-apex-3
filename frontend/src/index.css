@@ -1,39 +1,44 @@
-@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
 @import "tailwindcss";
 
 :root {
-  --background: 220 20% 98%; /* #F8F9FB */
-  --surface: 0 0% 100%;       /* #FFFFFF */
-  --foreground: 0 0% 9%;      /* #171717 */
-  --primary: 243 100% 68%;    /* #635BFF */
+  --background: 210 20% 98.5%; /* #F8FAFC */
+  --surface: 0 0% 100%;        /* #FFFFFF pure white */
+  --foreground: 224 71% 4%;    /* #0F172A deep slate text */
+  --primary: 243 100% 68%;     /* #635BFF modern vibrant indigo */
   --primary-hover: 245 78% 58%; /* #5145E5 */
   --primary-subtle: 243 100% 97%; /* #F0EFFF */
   --primary-foreground: 0 0% 100%;
-  --secondary: 220 14% 96%;   /* #F3F4F6 */
-  --secondary-foreground: 220 11% 37%; /* #525866 */
-  --muted: 220 14% 96%;
-  --muted-foreground: 220 7% 56%; /* #858B98 */
-  --accent: 243 100% 68%;     /* #635BFF */
+  --secondary: 210 20% 96.5%;  /* #F1F5F9 */
+  --secondary-foreground: 215 16% 47%; /* #475569 */
+  --muted: 210 20% 96.5%;
+  --muted-foreground: 215 16% 55%; /* #64748B */
+  --accent: 243 100% 68%;      /* #635BFF */
   --accent-foreground: 0 0% 100%;
-  --border: 220 13% 91%;      /* #E5E7EB */
-  --border-strong: 218 11% 84%; /* #D1D5DB */
+  --border: 214 32% 91%;       /* #E2E8F0 crisp subtle border */
+  --border-strong: 215 20% 85%; /* #CBD5E1 */
   --ring: 243 100% 68%;
-  --radius: 0.5rem;
-  --font-display: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-  --font-body: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-  --shadow-subtle: 0 1px 2px 0 rgba(0, 0, 0, 0.04);
-  --shadow-card: 0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px -1px rgba(0, 0, 0, 0.05);
-  --shadow-dropdown: 0 4px 12px -2px rgba(0, 0, 0, 0.08);
+  --radius: 0.75rem;
+  --font-display: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  --font-body: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+
+  /* Premium White Surface Shadows */
+  --shadow-subtle: 0 1px 2px 0 rgba(15, 23, 42, 0.03);
+  --shadow-card: 0 1px 3px 0 rgba(15, 23, 42, 0.04), 0 1px 2px -1px rgba(15, 23, 42, 0.04);
+  --shadow-premium: 0 4px 20px -2px rgba(15, 23, 42, 0.05), 0 2px 6px -1px rgba(15, 23, 42, 0.02);
+  --shadow-dropdown: 0 10px 25px -5px rgba(15, 23, 42, 0.08), 0 8px 10px -6px rgba(15, 23, 42, 0.04);
 
   /* Semantic UI helpers */
-  --bg-main: #F8F9FB;
+  --bg-main: #F8FAFC;
   --bg-card: #FFFFFF;
-  --border-subtle: #E5E7EB;
+  --border-subtle: #E2E8F0;
 }
 
 @theme {
   --font-display: var(--font-display);
   --font-body: var(--font-body);
+  --font-mono: var(--font-mono);
   --color-background: hsl(var(--background));
   --color-surface: hsl(var(--surface));
   --color-foreground: hsl(var(--foreground));
@@ -67,18 +72,31 @@ body {
   font-family: var(--font-body);
 }
 
-/* Custom scrollbars */
+/* Glass & Premium Card Accents on Pure White */
+.card-premium {
+  background: #FFFFFF;
+  border: 1px solid #E2E8F0;
+  box-shadow: 0 1px 3px 0 rgba(15, 23, 42, 0.04), 0 1px 2px -1px rgba(15, 23, 42, 0.04);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.card-premium:hover {
+  border-color: #CBD5E1;
+  box-shadow: 0 4px 14px 0 rgba(15, 23, 42, 0.05);
+}
+
+/* Custom crisp scrollbars */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
 }
 ::-webkit-scrollbar-track {
-  background: #f8fafc;
+  background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
+  background: #E2E8F0;
   border-radius: 9999px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
+  background: #CBD5E1;
 }
