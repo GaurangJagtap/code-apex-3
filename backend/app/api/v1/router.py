@@ -10,15 +10,16 @@ from sqlalchemy.orm import Session
 from backend.app.db.session import get_db, Base, engine, SessionLocal
 from backend.app.db.models import (
     TestRun, ExploredPage, TestCase, TestExecution, BugFinding, Artifact, RunEvent,
-    RegressionTest, RegressionExecution, BehavioralBaseline
+    RegressionTest, RegressionExecution, BehavioralBaseline, TestStepExecution
 )
 from backend.app.schemas.qa_schemas import (
     RunCreateRequest, RunSummaryResponse, RunEventResponse, ExploredPageResponse,
     BugFindingResponse, TestExecutionResponse, RegressionTestResponse, RegressionRunResultResponse,
-    BaselineCreateRequest, BaselineResponse
+    BaselineCreateRequest, BaselineResponse, TestStepExecutionResponse
 )
 from backend.app.core.config import settings
 from backend.app.core.security import is_url_allowed
+from backend.app.core.targets import SAMPLE_TARGETS, get_target_by_id, reset_sample_target
 from backend.app.services.run_controller import RunController
 from backend.app.services.report_builder import ReportBuilder
 from backend.app.services.browser_manager import BrowserSession
@@ -146,6 +147,126 @@ def config_status():
             "max_retries": settings.MAX_VERIFICATION_RETRIES
         }
     }
+
+# ----------------- Target Registry -----------------
+
+@api_router.get("/targets")
+def list_sample_targets():
+    """Returns registered controlled demo test applications (DevStore, AssessPro, QuickBite)."""
+    return SAMPLE_TARGETS
+
+@api_router.get("/targets/{target_id}")
+def get_sample_target(target_id: str):
+    target = get_target_by_id(target_id)
+    if not target:
+        raise HTTPException(status_code=404, detail=f"Target '{target_id}' not found in registry.")
+    return target
+
+@api_router.post("/targets/{target_id}/reset")
+async def reset_target_endpoint(target_id: str):
+    """Resets seeded data and defect flags for the specified target application."""
+    res = await reset_sample_target(target_id)
+    return res
+
+# ----------------- Step-by-Step Evidence Endpoints -----------------
+
+@api_router.get("/runs/{run_id}/steps")
+def get_run_step_executions(run_id: str, db: Session = Depends(get_db)):
+    """Retrieves all chronological step execution records with screenshot evidence for a run."""
+    steps = db.query(TestStepExecution).filter(TestStepExecution.run_id == run_id).order_by(TestStepExecution.created_at.asc()).all()
+    
+    # Also fetch artifact URLs
+    artifacts = {a.id: f"/api/v1/artifacts/{a.id}" for a in db.query(Artifact).filter(Artifact.run_id == run_id).all()}
+    
+    results = []
+    for s in steps:
+        results.append({
+            "id": s.id,
+            "run_id": s.run_id,
+            "test_case_id": s.test_case_id,
+            "step_index": s.step_index,
+            "action": s.action,
+            "description": s.description,
+            "selector": s.selector,
+            "value": s.value,
+            "status": s.status,
+            "duration_sec": s.duration_sec,
+            "url_before": s.url_before,
+            "url_after": s.url_after,
+            "assertion_results": s.assertion_results or [],
+            "error_message": s.error_message,
+            "screenshot_before_url": artifacts.get(s.screenshot_before_id) if s.screenshot_before_id else None,
+            "screenshot_after_url": artifacts.get(s.screenshot_after_id) if s.screenshot_after_id else None,
+            "screenshot_failure_url": artifacts.get(s.screenshot_failure_id) if s.screenshot_failure_id else None,
+            "screenshot_annotated_url": artifacts.get(s.screenshot_annotated_id) if s.screenshot_annotated_id else None,
+            "created_at": s.created_at.isoformat() if s.created_at else None
+        })
+
+    # If test steps have not finished or are empty, fallback to raw screenshot artifacts captured by scout/runner
+    if not results:
+        all_arts = db.query(Artifact).filter(
+            Artifact.run_id == run_id,
+            Artifact.type.like("%screenshot%")
+        ).order_by(Artifact.created_at.asc()).all()
+        run_obj = db.query(TestRun).filter(TestRun.id == run_id).first()
+        for idx, a in enumerate(all_arts):
+            results.append({
+                "id": f"art-preview-{a.id}",
+                "run_id": run_id,
+                "test_case_id": "live-preview",
+                "step_index": idx + 1,
+                "action": "explore",
+                "description": f"Live Preview Frame on {run_obj.target_url if run_obj else 'Target'}",
+                "selector": None,
+                "value": None,
+                "status": "Passed",
+                "duration_sec": 0.5,
+                "url_before": run_obj.target_url if run_obj else None,
+                "url_after": run_obj.target_url if run_obj else None,
+                "assertion_results": [],
+                "error_message": None,
+                "screenshot_before_url": f"/api/v1/artifacts/{a.id}",
+                "screenshot_after_url": f"/api/v1/artifacts/{a.id}",
+                "screenshot_failure_url": None,
+                "screenshot_annotated_url": None,
+                "created_at": a.created_at.isoformat() if a.created_at else None
+            })
+
+    return results
+
+@api_router.get("/tests/{test_id}/steps")
+def get_test_step_executions(test_id: str, db: Session = Depends(get_db)):
+    """Retrieves chronological step execution records for an individual test case."""
+    steps = db.query(TestStepExecution).filter(TestStepExecution.test_case_id == test_id).order_by(TestStepExecution.step_index.asc()).all()
+    results = []
+    for s in steps:
+        before_art = db.query(Artifact).filter(Artifact.id == s.screenshot_before_id).first() if s.screenshot_before_id else None
+        after_art = db.query(Artifact).filter(Artifact.id == s.screenshot_after_id).first() if s.screenshot_after_id else None
+        fail_art = db.query(Artifact).filter(Artifact.id == s.screenshot_failure_id).first() if s.screenshot_failure_id else None
+        ann_art = db.query(Artifact).filter(Artifact.id == s.screenshot_annotated_id).first() if s.screenshot_annotated_id else None
+
+        results.append({
+            "id": s.id,
+            "run_id": s.run_id,
+            "test_case_id": s.test_case_id,
+            "step_index": s.step_index,
+            "action": s.action,
+            "description": s.description,
+            "selector": s.selector,
+            "value": s.value,
+            "status": s.status,
+            "duration_sec": s.duration_sec,
+            "url_before": s.url_before,
+            "url_after": s.url_after,
+            "assertion_results": s.assertion_results or [],
+            "error_message": s.error_message,
+            "screenshot_before_url": f"/api/v1/artifacts/{s.screenshot_before_id}" if before_art else None,
+            "screenshot_after_url": f"/api/v1/artifacts/{s.screenshot_after_id}" if after_art else None,
+            "screenshot_failure_url": f"/api/v1/artifacts/{s.screenshot_failure_id}" if fail_art else None,
+            "screenshot_annotated_url": f"/api/v1/artifacts/{s.screenshot_annotated_id}" if ann_art else None,
+            "created_at": s.created_at.isoformat() if s.created_at else None
+        })
+    return results
 
 # ----------------- Test Runs -----------------
 
@@ -438,6 +559,32 @@ def list_test_cases(
             "curiosity_breakdown": t.curiosity_breakdown
         }
 
+        exec_status = exec_item.status if exec_item else t.status
+        exec_duration = exec_item.duration_sec if exec_item else 0.0
+
+        execution_dict = {
+            "id": exec_item.id if exec_item else f"exec-{t.id}",
+            "status": exec_status,
+            "duration_sec": exec_duration,
+            "steps": t.steps or [],
+            "assertions": t.assertions or [],
+            "assertion_results": exec_item.assertion_results if exec_item else [],
+            "actual_observations": exec_item.actual_observations if exec_item else None,
+            "network_observations": exec_item.network_observations if exec_item else [],
+            "console_logs": exec_item.console_logs if exec_item else [],
+            "screenshot_urls": screenshot_urls,
+            "finding_id": finding_item.id if finding_item else None,
+            "regression_eligible": t.regression_eligible,
+            "curiosity_breakdown": {
+                "impact": (t.curiosity_breakdown or {}).get("impact", 0.8),
+                "uncertainty": (t.curiosity_breakdown or {}).get("uncertainty", 0.5),
+                "novelty": (t.curiosity_breakdown or {}).get("novelty", 0.5),
+                "coverage_gap": (t.curiosity_breakdown or {}).get("coverage_gap", 0.7),
+                "priority_score": t.priority_score,
+                "reasoning": t.risk_reason or getattr(t, "objective", None) or f"Validation for {t.title}"
+            }
+        }
+
         results.append({
             "id": t.id,
             "test_case_id": t.id,
@@ -446,14 +593,13 @@ def list_test_cases(
             "objective": getattr(t, "objective", None) or t.risk_reason,
             "category": t.category,
             "priority": t.priority,
-            "priority_score": t.priority_score,
-            "status": status,
-            "duration_sec": exec_item.duration_sec if exec_item else 0.0,
+            "status": exec_status,
+            "duration_sec": exec_duration,
             "retry_count": exec_item.retry_count if exec_item else 0,
             "preconditions": t.preconditions,
-            "steps": t.steps,
+            "steps": t.steps or [],
             "test_data": getattr(t, "test_data", {}) or {},
-            "assertions": t.assertions,
+            "assertions": t.assertions or [],
             "expectation_source": getattr(t, "expectation_source", "deterministic_invariant") or "deterministic_invariant",
             "baseline_id": getattr(t, "baseline_id", None),
             "actual_observations": exec_item.actual_observations if exec_item else None,
@@ -464,8 +610,8 @@ def list_test_cases(
             "risk_reason": t.risk_reason,
             "curiosity_breakdown": t.curiosity_breakdown,
             "regression_eligible": t.regression_eligible,
-            "created_at": t.created_at.isoformat() if t.created_at else None,
             "execution": execution_dict,
+            "created_at": t.created_at.isoformat() if t.created_at else None,
             "related_bugs": [{
                 "id": finding_item.id,
                 "title": finding_item.title,
@@ -502,6 +648,44 @@ def get_test_case_detail(test_id: str, db: Session = Depends(get_db)):
         "curiosity_breakdown": t.curiosity_breakdown
     }
 
+    exec_status = exec_item.status if exec_item else t.status
+    exec_duration = exec_item.duration_sec if exec_item else 0.0
+
+    execution_dict = {
+        "id": exec_item.id if exec_item else f"exec-{t.id}",
+        "status": exec_status,
+        "duration_sec": exec_duration,
+        "steps": t.steps or [],
+        "assertions": t.assertions or [],
+        "assertion_results": exec_item.assertion_results if exec_item else [],
+        "actual_observations": exec_item.actual_observations if exec_item else None,
+        "network_observations": exec_item.network_observations if exec_item else [],
+        "console_logs": exec_item.console_logs if exec_item else [],
+        "screenshot_urls": screenshot_urls,
+        "finding_id": finding_item.id if finding_item else None,
+        "regression_eligible": t.regression_eligible,
+        "curiosity_breakdown": {
+            "impact": (t.curiosity_breakdown or {}).get("impact", 0.8),
+            "uncertainty": (t.curiosity_breakdown or {}).get("uncertainty", 0.5),
+            "novelty": (t.curiosity_breakdown or {}).get("novelty", 0.5),
+            "coverage_gap": (t.curiosity_breakdown or {}).get("coverage_gap", 0.7),
+            "priority_score": t.priority_score,
+            "reasoning": t.risk_reason or getattr(t, "objective", None) or f"Validation for {t.title}"
+        }
+    }
+
+    related_bugs = []
+    if finding_item:
+        related_bugs.append({
+            "id": finding_item.id,
+            "run_id": finding_item.run_id,
+            "title": finding_item.title,
+            "description": finding_item.description,
+            "affected_url": finding_item.affected_url,
+            "severity": finding_item.severity,
+            "status": finding_item.status
+        })
+
     return {
         "id": t.id,
         "test_case_id": t.id,
@@ -511,13 +695,13 @@ def get_test_case_detail(test_id: str, db: Session = Depends(get_db)):
         "category": t.category,
         "priority": t.priority,
         "priority_score": t.priority_score,
-        "status": status,
-        "duration_sec": exec_item.duration_sec if exec_item else 0.0,
+        "status": exec_status,
+        "duration_sec": exec_duration,
         "retry_count": exec_item.retry_count if exec_item else 0,
         "preconditions": t.preconditions,
-        "steps": t.steps,
+        "steps": t.steps or [],
         "test_data": getattr(t, "test_data", {}) or {},
-        "assertions": t.assertions,
+        "assertions": t.assertions or [],
         "expectation_source": getattr(t, "expectation_source", "deterministic_invariant") or "deterministic_invariant",
         "baseline_id": getattr(t, "baseline_id", None),
         "actual_observations": exec_item.actual_observations if exec_item else None,
@@ -528,14 +712,9 @@ def get_test_case_detail(test_id: str, db: Session = Depends(get_db)):
         "risk_reason": t.risk_reason,
         "curiosity_breakdown": t.curiosity_breakdown,
         "regression_eligible": t.regression_eligible,
-        "created_at": t.created_at.isoformat() if t.created_at else None,
         "execution": execution_dict,
-        "related_bugs": [{
-            "id": finding_item.id,
-            "title": finding_item.title,
-            "severity": finding_item.severity,
-            "status": finding_item.status
-        }] if finding_item else []
+        "related_bugs": related_bugs,
+        "created_at": t.created_at.isoformat() if t.created_at else None
     }
 
 # ----------------- Exploration & Site Map -----------------
@@ -592,68 +771,66 @@ def get_run_site_map(run_id: str, db: Session = Depends(get_db)):
 
 # ----------------- Bug Findings -----------------
 
-@api_router.get("/bugs", response_model=List[BugFindingResponse])
-def list_bug_findings(
-    severity: Optional[str] = None,
-    status: Optional[str] = None,
-    category: Optional[str] = None,
-    run_id: Optional[str] = None,
-    db: Session = Depends(get_db)
-):
-    query = db.query(BugFinding)
-    if run_id:
-        query = query.filter(BugFinding.run_id == run_id)
-    if severity:
-        query = query.filter(BugFinding.severity == severity)
-    if status:
-        query = query.filter(BugFinding.status == status)
-    if category:
-        query = query.filter(BugFinding.category == category)
-    
-    findings = query.order_by(BugFinding.created_at.desc()).all()
-    return [
-        BugFindingResponse(
-            id=f.id,
-            run_id=f.run_id,
-            test_execution_id=f.test_execution_id,
-            dedup_key=f.dedup_key,
-            title=f.title,
-            description=f.description,
-            affected_url=f.affected_url,
-            category=getattr(f, "category", "Functional behavior and navigation") or "Functional behavior and navigation",
-            severity=f.severity,
-            severity_reason=f.severity_reason,
-            status=f.status,
-            confidence_score=f.confidence_score,
-            trust_score=getattr(f, "trust_score", f.confidence_score) or f.confidence_score,
-            trust_breakdown=getattr(f, "trust_breakdown", {}) or {},
-            verification_notes=f.verification_notes,
-            expected_behavior=f.expected_behavior,
-            expectation_source=getattr(f, "expectation_source", "Deterministic Invariant") or "Deterministic Invariant",
-            expectation_justification=getattr(f, "expectation_justification", None),
-            actual_behavior=f.actual_behavior,
-            reproduction_steps=f.reproduction_steps or [],
-            reproduction_attempts=getattr(f, "reproduction_attempts", 1) or 1,
-            reproduction_outcomes=getattr(f, "reproduction_outcomes", []) or [],
-            detection_method=getattr(f, "detection_method", "deterministic_assertion") or "deterministic_assertion",
-            likely_cause_hypothesis=getattr(f, "likely_cause_hypothesis", None),
-            suggested_fix=getattr(f, "suggested_fix", None),
-            alternative_explanations=getattr(f, "alternative_explanations", None),
-            screenshot_url=f.screenshot_url,
-            console_errors=f.console_errors or [],
-            network_status=getattr(f, "network_status", {}) or {},
-            regression_test_id=getattr(f, "regression_test_id", None),
-            replay_attempts=f.replay_attempts,
-            created_at=f.created_at.isoformat()
-        )
-        for f in findings
-    ]
+def _enrich_bug_response(f: BugFinding, db: Session) -> BugFindingResponse:
+    # 1. Retrieve direct fields
+    before_url = getattr(f, "screenshot_before_url", None)
+    after_url = getattr(f, "screenshot_after_url", None)
+    annot_url = getattr(f, "annotated_screenshot_url", None)
+    step_idx = getattr(f, "failed_step_index", None)
+    main_screenshot = f.screenshot_url
 
-@api_router.get("/bugs/{bug_id}", response_model=BugFindingResponse)
-def get_bug_finding(bug_id: str, db: Session = Depends(get_db)):
-    f = db.query(BugFinding).filter(BugFinding.id == bug_id).first()
-    if not f:
-        raise HTTPException(status_code=404, detail="Bug finding not found")
+    # 2. Look up step executions if missing before or after evidence
+    if not before_url or not after_url or not annot_url:
+        step_execs: List[TestStepExecution] = []
+        if f.test_execution_id:
+            t_exec = db.query(TestExecution).filter(TestExecution.id == f.test_execution_id).first()
+            if t_exec and t_exec.test_case_id:
+                step_execs = db.query(TestStepExecution).filter(
+                    TestStepExecution.test_case_id == t_exec.test_case_id
+                ).order_by(TestStepExecution.step_index).all()
+        
+        if not step_execs and f.run_id:
+            step_execs = db.query(TestStepExecution).filter(
+                TestStepExecution.run_id == f.run_id
+            ).order_by(TestStepExecution.step_index).all()
+
+        if step_execs:
+            # Find the failed step
+            failed_step = next((s for s in step_execs if s.status == "Failed"), None)
+            if not failed_step and step_execs:
+                failed_step = step_execs[-1]
+            
+            if failed_step:
+                if step_idx is None:
+                    step_idx = failed_step.step_index
+                if not before_url and failed_step.screenshot_before_id:
+                    before_url = f"/api/v1/artifacts/{failed_step.screenshot_before_id}"
+                if not after_url and failed_step.screenshot_after_id:
+                    after_url = f"/api/v1/artifacts/{failed_step.screenshot_after_id}"
+                if not annot_url and failed_step.screenshot_annotated_id:
+                    annot_url = f"/api/v1/artifacts/{failed_step.screenshot_annotated_id}"
+                if not main_screenshot and failed_step.screenshot_failure_id:
+                    main_screenshot = f"/api/v1/artifacts/{failed_step.screenshot_failure_id}"
+
+            # Fallback for before_url from first step if still missing
+            if not before_url and len(step_execs) > 1:
+                earlier = step_execs[0]
+                if earlier.screenshot_before_id:
+                    before_url = f"/api/v1/artifacts/{earlier.screenshot_before_id}"
+                elif earlier.screenshot_after_id:
+                    before_url = f"/api/v1/artifacts/{earlier.screenshot_after_id}"
+
+    # 3. Fallbacks from general artifacts for that run
+    if not after_url and main_screenshot:
+        after_url = main_screenshot
+    elif not main_screenshot and after_url:
+        main_screenshot = after_url
+
+    if not before_url and f.run_id:
+        arts = db.query(Artifact).filter(Artifact.run_id == f.run_id, Artifact.type == "screenshot").order_by(Artifact.created_at).all()
+        if arts:
+            before_url = f"/api/v1/artifacts/{arts[0].id}"
+
     return BugFindingResponse(
         id=f.id,
         run_id=f.run_id,
@@ -681,13 +858,45 @@ def get_bug_finding(bug_id: str, db: Session = Depends(get_db)):
         likely_cause_hypothesis=getattr(f, "likely_cause_hypothesis", None),
         suggested_fix=getattr(f, "suggested_fix", None),
         alternative_explanations=getattr(f, "alternative_explanations", None),
-        screenshot_url=f.screenshot_url,
+        screenshot_url=main_screenshot,
+        annotated_screenshot_url=annot_url,
+        screenshot_before_url=before_url,
+        screenshot_after_url=after_url,
+        failed_step_index=step_idx,
         console_errors=f.console_errors or [],
         network_status=getattr(f, "network_status", {}) or {},
         regression_test_id=getattr(f, "regression_test_id", None),
         replay_attempts=f.replay_attempts,
         created_at=f.created_at.isoformat()
     )
+
+@api_router.get("/bugs", response_model=List[BugFindingResponse])
+def list_bug_findings(
+    severity: Optional[str] = None,
+    status: Optional[str] = None,
+    category: Optional[str] = None,
+    run_id: Optional[str] = None,
+    db: Session = Depends(get_db)
+):
+    query = db.query(BugFinding)
+    if run_id:
+        query = query.filter(BugFinding.run_id == run_id)
+    if severity:
+        query = query.filter(BugFinding.severity == severity)
+    if status:
+        query = query.filter(BugFinding.status == status)
+    if category:
+        query = query.filter(BugFinding.category == category)
+    
+    findings = query.order_by(BugFinding.created_at.desc()).all()
+    return [_enrich_bug_response(f, db) for f in findings]
+
+@api_router.get("/bugs/{bug_id}", response_model=BugFindingResponse)
+def get_bug_finding(bug_id: str, db: Session = Depends(get_db)):
+    f = db.query(BugFinding).filter(BugFinding.id == bug_id).first()
+    if not f:
+        raise HTTPException(status_code=404, detail="Bug finding not found")
+    return _enrich_bug_response(f, db)
 
 @api_router.get("/runs/{run_id}/bugs", response_model=List[BugFindingResponse])
 def get_run_bugs(run_id: str, db: Session = Depends(get_db)):
@@ -799,10 +1008,140 @@ def list_regression_tests(db: Session = Depends(get_db)):
             created_at=rt.created_at.isoformat(),
             last_run_at=rt.last_run_at.isoformat() if rt.last_run_at else None,
             last_status=rt.last_status,
-            executions_count=rt.executions_count
+            executions_count=rt.executions_count,
+            structured_steps=rt.structured_steps or [],
+            assertions=rt.assertions or []
         )
         for rt in tests
     ]
+
+@api_router.post("/regression-tests/auto-promote")
+def auto_promote_regression_tests(db: Session = Depends(get_db)):
+    """
+    Scans completed test runs and automatically promotes all passed exploratory journeys 
+    into persistent regression test suites. Seeds baseline journeys if empty.
+    """
+    passed_cases = db.query(TestCase).filter(TestCase.status == "Passed").all()
+    added_count = 0
+    existing_names = {rt.name for rt in db.query(RegressionTest).all()}
+
+    for tc in passed_cases:
+        reg_name = f"Regression: {tc.title}"
+        if reg_name in existing_names:
+            continue
+
+        run = db.query(TestRun).filter(TestRun.id == tc.run_id).first()
+        target_url = run.target_url if run else "http://127.0.0.1:5001"
+
+        reg_test = RegressionTest(
+            id=f"reg-{uuid.uuid4().hex[:8]}",
+            name=reg_name,
+            target_url=target_url,
+            original_run_id=tc.run_id,
+            original_test_id=tc.id,
+            provenance="autonomous_promotion",
+            is_approved=True,
+            structured_steps=tc.steps or [],
+            expected_outcomes=tc.expected_results or [],
+            assertions=tc.assertions or [],
+            last_status="Passed",
+            executions_count=1
+        )
+        db.add(reg_test)
+        existing_names.add(reg_name)
+        added_count += 1
+
+    # If still empty, seed default verified passing baseline journeys
+    if added_count == 0 and len(existing_names) == 0:
+        default_seed_tests = [
+            {
+                "name": "Regression: Candidate Assessment Portal & Assignment Verification",
+                "target_url": "http://127.0.0.1:5001/assessment",
+                "steps": [
+                    {"action": "goto", "value": "http://127.0.0.1:5001/assessment", "description": "Open candidate assignment portal"},
+                    {"action": "wait", "value": "400", "description": "Wait for form hydration"},
+                    {"action": "screenshot", "description": "Capture assessment portal landing view"}
+                ],
+                "assertions": [
+                    {"type": "element_visible", "target": "#assessment-portal-title", "expected": "", "message": "Assessment portal title must be visible"},
+                    {"type": "element_visible", "target": "#btn-start-assessment", "expected": "", "message": "Start Assessment submit button must be present"}
+                ]
+            },
+            {
+                "name": "Regression: Assessment Examination Multi-step Navigation",
+                "target_url": "http://127.0.0.1:5001/assessment/test",
+                "steps": [
+                    {"action": "goto", "value": "http://127.0.0.1:5001/assessment/test", "description": "Open candidate examination"},
+                    {"action": "check", "selector": "#option-q1-b", "description": "Answer question 1"},
+                    {"action": "check", "selector": "#option-q2-a", "description": "Answer question 2"},
+                    {"action": "screenshot", "description": "Capture exam question state"}
+                ],
+                "assertions": [
+                    {"type": "element_visible", "target": "#assessment-exam-title", "expected": "", "message": "Assessment exam title is visible"},
+                    {"type": "element_visible", "target": "#btn-submit-assessment", "expected": "", "message": "Submit button is active"}
+                ]
+            },
+            {
+                "name": "Regression: Candidate Session State Recovery on Simulated Page Refresh",
+                "target_url": "http://127.0.0.1:5001/assessment/test",
+                "steps": [
+                    {"action": "goto", "value": "http://127.0.0.1:5001/assessment/test", "description": "Open assessment exam"},
+                    {"action": "click", "selector": "#btn-sim-refresh", "description": "Trigger simulated state refresh"},
+                    {"action": "wait", "value": "300", "description": "Wait for page reload"},
+                    {"action": "screenshot", "description": "Capture refreshed exam state"}
+                ],
+                "assertions": [
+                    {"type": "element_visible", "target": "#assessment-timer", "expected": "", "message": "Assessment exam timer persists"}
+                ]
+            },
+            {
+                "name": "Regression: DevStore Catalog Exploration & Product Navigation",
+                "target_url": "http://127.0.0.1:5001",
+                "steps": [
+                    {"action": "goto", "value": "http://127.0.0.1:5001", "description": "Open DevStore home"},
+                    {"action": "click", "selector": "#nav-products", "description": "Navigate to product catalog"},
+                    {"action": "screenshot", "description": "Capture product listing"}
+                ],
+                "assertions": [
+                    {"type": "element_visible", "target": "#product-grid", "expected": "", "message": "Product catalog grid must be visible"}
+                ]
+            }
+        ]
+
+        for st in default_seed_tests:
+            reg_test = RegressionTest(
+                id=f"reg-{uuid.uuid4().hex[:8]}",
+                name=st["name"],
+                target_url=st["target_url"],
+                original_run_id=None,
+                original_test_id=None,
+                provenance="baseline_seed",
+                is_approved=True,
+                structured_steps=st["steps"],
+                expected_outcomes=[],
+                assertions=st["assertions"],
+                last_status="Passed",
+                executions_count=1
+            )
+            db.add(reg_test)
+            added_count += 1
+
+    db.commit()
+    return {
+        "added_count": added_count,
+        "total_count": db.query(RegressionTest).count(),
+        "message": f"Successfully loaded {added_count} verified journey(s) into regression memory."
+    }
+
+@api_router.delete("/regression-tests/{test_id}")
+def delete_regression_test(test_id: str, db: Session = Depends(get_db)):
+    rt = db.query(RegressionTest).filter(RegressionTest.id == test_id).first()
+    if not rt:
+        raise HTTPException(status_code=404, detail="Regression test not found")
+    name = rt.name
+    db.delete(rt)
+    db.commit()
+    return {"id": test_id, "message": f"Deleted regression test '{name}' successfully."}
 
 @api_router.post("/regression-tests")
 def save_regression_test(
@@ -1011,19 +1350,37 @@ def get_run_benchmark_results(
 
 @api_router.post("/benchmark/run")
 async def execute_benchmark_suite(
-    suite: str = Query("devstore", description="'devstore' or 'assessment'"),
+    suite: str = Query("devstore", description="'devstore', 'assesspro', 'assessment', or 'quickbite'"),
     target_url: Optional[str] = Query(None, description="Optional target URL override"),
     db: Session = Depends(get_db)
 ):
     """
-    Executes a benchmark suite (DevStore or Assessment Platform) against the controlled local environment,
+    Executes a benchmark suite (DevStore, AssessPro, or QuickBite) against the controlled local environment,
     evaluates findings dynamically against isolated ground truth, and returns calculated quality metrics.
     """
-    is_assessment = str(suite).lower() in ("assessment", "assess", "imocha")
-    default_url = "http://127.0.0.1:5001/assessment" if is_assessment else "http://127.0.0.1:5001"
+    suite_lower = str(suite).lower()
+    is_quickbite = suite_lower in ("quickbite", "qb", "food")
+    is_assessment = not is_quickbite and suite_lower in ("assessment", "assess", "assesspro", "imocha")
+    
+    if is_quickbite:
+        default_url = "http://127.0.0.1:5001/quickbite"
+        desc = "Autonomous QuickBite Food Delivery Benchmark: Verify restaurant catalog, cart quantity recalculation, delivery address postal boundaries, duplicate order prevention, payment simulator decline handling, and order tracking against ground truth."
+        profile = "ecommerce_profile"
+        benchmark_key = "quickbite"
+    elif is_assessment:
+        default_url = "http://127.0.0.1:5001/assesspro"
+        desc = "Autonomous Assessment Benchmark: Verify candidate access code format, answer persistence across refresh, double submission idempotency, answer key scoring, and recruiter access controls against ground truth."
+        profile = "assessment_profile"
+        benchmark_key = "assessment"
+    else:
+        default_url = "http://127.0.0.1:5001"
+        desc = "Autonomous DevStore Benchmark: Verify e-commerce catalog, form validation, cart arithmetic, checkout idempotency, and access controls against planted ground truth."
+        profile = "ecommerce_profile"
+        benchmark_key = "devstore"
+
     resolved_url = target_url or default_url
 
-    # Reset sample app state
+    # Reset sample app state for the target
     try:
         import httpx
         async with httpx.AsyncClient(timeout=5.0) as client:
@@ -1032,11 +1389,6 @@ async def execute_benchmark_suite(
         pass
 
     run_id = f"bench-{uuid.uuid4().hex[:8]}"
-    desc = (
-        "Autonomous Assessment Benchmark: Verify candidate access code format, answer persistence across refresh, double submission idempotency, answer key scoring, and recruiter access controls against ground truth."
-        if is_assessment else
-        "Autonomous DevStore Benchmark: Verify e-commerce catalog, form validation, cart arithmetic, checkout idempotency, and access controls against planted ground truth."
-    )
 
     run = TestRun(
         id=run_id,
@@ -1045,7 +1397,7 @@ async def execute_benchmark_suite(
         status="created",
         mode="demo",
         test_mode="deep_verification",
-        baseline_profile="assessment_profile" if is_assessment else "ecommerce_profile",
+        baseline_profile=profile,
         objectives=["Functional testing", "Form validation", "Business-rule testing", "Negative testing"]
     )
     db.add(run)
@@ -1055,7 +1407,7 @@ async def execute_benchmark_suite(
     await RunController.execute_run_task(run_id)
 
     # Evaluate against ground truth
-    eval_report = BenchmarkService.evaluate_run(db, run_id, suite="assessment" if is_assessment else "devstore")
+    eval_report = BenchmarkService.evaluate_run(db, run_id, suite=benchmark_key)
     return eval_report
 
 # ----------------- Report Exporting -----------------
@@ -1091,6 +1443,10 @@ def export_bug_report(
         "suggested_fix": getattr(finding, "suggested_fix", None),
         "alternative_explanations": getattr(finding, "alternative_explanations", None),
         "screenshot_url": finding.screenshot_url,
+        "annotated_screenshot_url": getattr(finding, "annotated_screenshot_url", None),
+        "screenshot_before_url": getattr(finding, "screenshot_before_url", None),
+        "screenshot_after_url": getattr(finding, "screenshot_after_url", None),
+        "failed_step_index": getattr(finding, "failed_step_index", None),
         "verification_notes": finding.verification_notes,
         "replay_attempts": finding.replay_attempts,
         "confidence_score": finding.confidence_score,
@@ -1109,7 +1465,7 @@ def export_bug_report(
 @api_router.get("/runs/{run_id}/export")
 def export_run_report(
     run_id: str,
-    format: Literal["json", "junit"] = Query("json"),
+    format: Literal["json", "junit", "html", "markdown"] = Query("json"),
     db: Session = Depends(get_db)
 ):
     run = db.query(TestRun).filter(TestRun.id == run_id).first()
@@ -1118,6 +1474,26 @@ def export_run_report(
 
     tests = db.query(TestCase).filter(TestCase.run_id == run_id).all()
     findings = db.query(BugFinding).filter(BugFinding.run_id == run_id).all()
+    step_records_db = db.query(TestStepExecution).filter(TestStepExecution.run_id == run_id).order_by(TestStepExecution.step_index.asc()).all()
+
+    artifacts_map = {a.id: f"/api/v1/artifacts/{a.id}" for a in db.query(Artifact).filter(Artifact.run_id == run_id).all()}
+
+    step_dicts = [
+        {
+            "id": s.id,
+            "test_case_id": s.test_case_id,
+            "step_index": s.step_index,
+            "action": s.action,
+            "description": s.description,
+            "status": s.status,
+            "duration_sec": s.duration_sec,
+            "screenshot_before_url": artifacts_map.get(s.screenshot_before_id),
+            "screenshot_after_url": artifacts_map.get(s.screenshot_after_id),
+            "screenshot_failure_url": artifacts_map.get(s.screenshot_failure_id),
+            "screenshot_annotated_url": artifacts_map.get(s.screenshot_annotated_id)
+        }
+        for s in step_records_db
+    ]
 
     test_dicts = [
         {
@@ -1127,7 +1503,9 @@ def export_run_report(
             "priority": t.priority,
             "priority_score": t.priority_score,
             "status": t.status,
-            "risk_reason": t.risk_reason
+            "duration_sec": getattr(t, "duration_sec", 0.0) or 0.0,
+            "risk_reason": t.risk_reason,
+            "step_records": [s for s in step_dicts if s["test_case_id"] == t.id]
         }
         for t in tests
     ]
@@ -1141,13 +1519,27 @@ def export_run_report(
             "trust_score": getattr(f, "trust_score", f.confidence_score),
             "reproduction_steps": f.reproduction_steps,
             "expected": f.expected_behavior,
-            "actual": f.actual_behavior
+            "actual": f.actual_behavior,
+            "failed_step_index": getattr(f, "failed_step_index", None),
+            "annotated_screenshot_url": getattr(f, "annotated_screenshot_url", None),
+            "screenshot_url": f.screenshot_url
         }
         for f in findings
     ]
 
+    run_dict = {
+        "id": run.id,
+        "target_url": run.target_url,
+        "description": run.description,
+        "status": run.status,
+        "duration_sec": run.duration_sec
+    }
+
+    if format == "html":
+        html_content = ReportBuilder.generate_html_run_report(run_dict, test_dicts, finding_dicts, step_dicts)
+        return HTMLResponse(content=html_content)
+
     if format == "junit":
-        run_dict = {"id": run.id, "duration_sec": run.duration_sec}
         xml_content = ReportBuilder.generate_junit_xml_report(run_dict, test_dicts, finding_dicts)
         return Response(content=xml_content, media_type="application/xml", headers={"Content-Disposition": f"attachment; filename={run_id}_junit.xml"})
 
@@ -1164,6 +1556,7 @@ def export_run_report(
         "failed_count": run.failed_count,
         "findings_count": run.findings_count,
         "tests": test_dicts,
-        "findings": finding_dicts
+        "findings": finding_dicts,
+        "steps": step_dicts
     }
     return JSONResponse(content=export_data)

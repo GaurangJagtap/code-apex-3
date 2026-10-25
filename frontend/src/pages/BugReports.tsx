@@ -12,9 +12,11 @@ import {
   Sparkles,
   Scale,
   RefreshCw,
-  SlidersHorizontal
+  SlidersHorizontal,
+  Camera
 } from 'lucide-react';
 import { fetchBugs, BugFinding } from '../api/client';
+import { getSimpleBugExplanation } from '../utils/bugExplainer';
 
 export const BugReports: React.FC = () => {
   const [bugs, setBugs] = useState<BugFinding[]>([]);
@@ -255,16 +257,35 @@ export const BugReports: React.FC = () => {
                       </NavLink>
                     </h3>
 
-                    <p className="text-xs text-[hsl(var(--muted-foreground))] line-clamp-1">{bug.description}</p>
+                    {/* Defect Summary Snippet */}
+                    {(() => {
+                      const expl = getSimpleBugExplanation(bug);
+                      return (
+                        <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-200/90 text-xs text-slate-800 space-y-0.5">
+                          <div className="font-semibold text-slate-900 flex items-center gap-1.5 text-[11px]">
+                            <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
+                            <span>{expl.headline}</span>
+                          </div>
+                          <p className="text-[11px] text-slate-600 leading-relaxed font-sans pl-5">
+                            {expl.inSimpleWords}
+                          </p>
+                        </div>
+                      );
+                    })()}
 
                     <div className="text-[11px] text-[hsl(var(--muted-foreground))] flex flex-wrap items-center gap-3 pt-1">
                       <span>Target: <code className="text-[hsl(var(--foreground))] font-mono">{bug.affected_url}</code></span>
                       <span>•</span>
-                      <span>Clean replay cycles: <strong className="text-[hsl(var(--foreground))]">{bug.replay_attempts}</strong></span>
+                      <span className="inline-flex items-center gap-1 text-emerald-700 font-semibold bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                        <Camera className="w-3 h-3 text-emerald-600" />
+                        <span>3-Step Screenshots: Before &bull; Bug &bull; After</span>
+                      </span>
+                      <span>•</span>
+                      <span>Replays: <strong className="text-[hsl(var(--foreground))]">{bug.replay_attempts}</strong></span>
                       <span>•</span>
                       <span className="inline-flex items-center gap-1">
                         <Scale className="w-3 h-3 text-[hsl(var(--accent))]" />
-                        <span>Trust Score:</span>
+                        <span>Trust:</span>
                         <strong className="text-[hsl(var(--foreground))] font-mono">
                           {(trustScore * 100).toFixed(0)}%
                         </strong>

@@ -28,39 +28,39 @@ interface DemoTargetPreset {
 
 const DEMO_PRESETS: DemoTargetPreset[] = [
   {
-    id: 'assessment',
-    name: 'iMocha Assessment Platform',
-    badge: '5 Assessment Defects',
-    url: 'http://127.0.0.1:5001/assessment',
-    description: 'Hiring assessment platform. Candidates register and take timed technical evaluations. Seeded defects: question 3 answer reset on reload (ASSESS-01), double submission race condition creating duplicate submissions (ASSESS-02), score calculation arithmetic error (ASSESS-03), candidate unauthorized score viewing before recruiter publish (ASSESS-04), and unvalidated email boundary acceptance (ASSESS-05).',
+    id: 'assesspro',
+    name: 'AssessPro Assessment Platform',
+    badge: '5 Seeded Defects',
+    url: 'http://127.0.0.1:5001/assesspro',
+    description: 'iMocha-style online assessment platform with timed exams, question palettes, answer persistence across reload, score reporting, and recruiter dashboards. Seeded defects: answer state wiped on reload (AP-BUG-01), non-idempotent duplicate submission on rapid click (AP-BUG-02), score calculation mismatch against ground truth answer key (AP-BUG-03), broken access control on recruiter evaluation dashboard (AP-BUG-04), and 1-character access code boundary validation bypass (AP-BUG-05).',
     objectives: ['Functional testing', 'Form validation', 'Business-rule testing', 'Negative testing'],
     baseline_profile: 'assessment'
   },
   {
+    id: 'quickbite',
+    name: 'QuickBite Food Delivery',
+    badge: '5 Seeded Defects',
+    url: 'http://127.0.0.1:5001/quickbite',
+    description: 'End-to-end food delivery service with restaurant discovery, categorized menus, cart arithmetic, address management, local payment simulator, and live order tracking. Seeded defects: cart subtotal calculation frozen on quantity increment (QB-BUG-01), delivery address accepts malformed 1-digit postal code (QB-BUG-02), payment submit double click duplicates order (QB-BUG-03), declined payment simulation falsely confirms order (QB-BUG-04), and confirmation screen status conflicts with authoritative database order record (QB-BUG-05).',
+    objectives: ['Functional testing', 'Business logic and calculations', 'Form validation and input boundaries', 'Transaction and workflow integrity'],
+    baseline_profile: 'ecommerce'
+  },
+  {
     id: 'devstore',
-    name: 'Controlled DevStore',
+    name: 'DevStore E-Commerce',
     badge: '5 Seeded Defects',
     url: 'http://127.0.0.1:5001',
-    description: 'E-commerce platform. Seeded defects: faulty email validation, incorrect cart subtotal arithmetic after quantity changes, missing postal-code validation, duplicate order creation on double submission, and broken access control on protected account pages.',
+    description: 'Standard e-commerce benchmark target. Seeded defects: faulty email regex format validation on registration (BUG-01), cart subtotal frozen at 1-item price after quantity change (BUG-02), missing validation on required postal code (BUG-03), non-idempotent duplicate order creation on rapid submit (BUG-04), and broken access control disclosing account history to anonymous visitors (BUG-05).',
     objectives: ['Functional testing', 'Form validation', 'Business-rule testing', 'Negative testing'],
     baseline_profile: 'ecommerce'
   },
   {
     id: 'saucedemo',
     name: 'SauceDemo E-Commerce',
-    badge: 'Industry Benchmark',
+    badge: 'External Target',
     url: 'https://www.saucedemo.com',
     description: 'Standard e-commerce QA benchmark. Users should be able to view login form, authenticate with standard credentials (standard_user / secret_sauce), browse catalog products, sort inventory, add items to cart, view cart subtotal, fill checkout credentials, and complete purchase workflows without UI exceptions.',
     objectives: ['Functional testing', 'Form validation', 'Navigation testing'],
-    baseline_profile: 'none'
-  },
-  {
-    id: 'the-internet',
-    name: 'The Internet QA Playground',
-    badge: 'Heroku Sandbox',
-    url: 'https://the-internet.herokuapp.com',
-    description: 'Autonomous exploration of UI testing sandbox. Verify navigation links, dynamic controls, authentication prompts, checkboxes, dropdown menus, and ensure error codes and status transitions resolve gracefully.',
-    objectives: ['Functional testing', 'Navigation testing', 'Negative testing'],
     baseline_profile: 'none'
   }
 ];
@@ -137,7 +137,11 @@ export const NewRun: React.FC = () => {
         baseline_profile: baselineProfile
       });
 
-      // Navigate to exploration page for this run
+      // Save active run ID to localStorage so Overview immediately locks onto this run when visited
+      localStorage.setItem('codeapex_active_run_id', res.run_id);
+      localStorage.setItem('codeapex_active_target_url', targetUrl);
+
+      // Navigate to exploration page for this run as before
       navigate(`/explore?run_id=${res.run_id}`);
     } catch (err: any) {
       setError(err?.response?.data?.detail || err.message || 'Failed to initialize test run.');

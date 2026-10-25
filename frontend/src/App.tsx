@@ -7,7 +7,6 @@ import { NewRun } from './pages/NewRun';
 import { Exploration } from './pages/Exploration';
 import { TestRuns } from './pages/TestRuns';
 import { TestCases } from './pages/TestCases';
-import { Baselines } from './pages/Baselines';
 import { BugReports } from './pages/BugReports';
 import { BugDetail } from './pages/BugDetail';
 import { RegressionTests } from './pages/RegressionTests';
@@ -31,7 +30,7 @@ export function App() {
             <Route path="/explore" element={<Exploration />} />
             <Route path="/runs" element={<TestRuns />} />
             <Route path="/test-cases" element={<TestCases />} />
-            <Route path="/baselines" element={<Baselines />} />
+            <Route path="/baselines" element={<Navigate to="/test-cases" replace />} />
             <Route path="/bugs" element={<BugReports />} />
             <Route path="/bugs/:bugId" element={<BugDetail />} />
             <Route path="/regression" element={<RegressionTests />} />

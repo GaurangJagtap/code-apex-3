@@ -48,9 +48,9 @@
           {% for ord in orders %}
           <tr id="order-row-{{ ord.id }}">
             <td><a href="/order-confirmation/{{ ord.id }}" style="color: #047857; font-weight: 600;">{{ ord.id }}</a></td>
-            <td>{{ ord.created_at[:10] }}</td>
+            <td>{{ (ord.created_at or '')[:10] or 'Recent' }}</td>
             <td>{{ ord.fullname }}</td>
-            <td>${{ "%.2f"|format(ord.total) }}</td>
+            <td>${{ "%.2f"|format(ord.total|float) }}</td>
             <td><span class="badge" style="background: #10b981;">Confirmed</span></td>
           </tr>
           {% endfor %}

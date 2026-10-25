@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+
+{% block title %}Delivery Address — QuickBite Checkout{% endblock %}
+
+{% block content %}
+<div style="max-width: 800px; margin: 1.5rem auto;">
+  <!-- Checkout Steps Progress Indicator -->
+  <div class="order-tracker">
+    <div class="tracker-step completed">
+      <div class="tracker-circle">1</div>
+      <div style="font-size: 0.8rem; font-weight: 700; color: #1e293b;">Food Cart</div>
+    </div>
+    <div class="tracker-step active">
+      <div class="tracker-circle">2</div>
+      <div style="font-size: 0.8rem; font-weight: 700; color: #ea580c;">Address</div>
+    </div>
+    <div class="tracker-step">
+      <div class="tracker-circle">3</div>
+      <div style="font-size: 0.8rem; font-weight: 600; color: #94a3b8;">Payment</div>
+    </div>
+    <div class="tracker-step">
+      <div class="tracker-circle">4</div>
+      <div style="font-size: 0.8rem; font-weight: 600; color: #94a3b8;">Delivered</div>
+    </div>
+  </div>
+
+  {% if error %}
+  <div id="address-error-alert" style="background: #fef2f2; border: 1px solid #f87171; color: #991b1b; padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem; font-size: 0.9rem;">
+    <strong>Validation Error:</strong> {{ error }}
+  </div>
+  {% endif %}
+
+  <div class="assess-card">
+    <h2 style="font-size: 1.4rem; color: #1e293b; font-weight: 800; margin-bottom: 0.5rem;">Select or Enter Delivery Address</h2>
+    <p style="color: #64748b; font-size: 0.85rem; margin-bottom: 1.5rem;">Where should our delivery courier drop off your hot meal?</p>
+
+    <!-- Address Entry Form -->
+    <form action="/quickbite/checkout/address" method="POST">
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+        <div>
+          <label for="full_name" style="display: block; font-size: 0.85rem; font-weight: 700; color: #334155; margin-bottom: 4px;">Contact Name *</label>
+          <input type="text" id="full_name" name="full_name" value="{{ address.full_name or 'Alex Morgan' }}" required style="width: 100%; padding: 0.65rem; border: 1px solid #cbd5e1; border-radius: 6px;">
+        </div>
+        <div>
+          <label for="phone" style="display: block; font-size: 0.85rem; font-weight: 700; color: #334155; margin-bottom: 4px;">Mobile Phone *</label>
+          <input type="text" id="phone" name="phone" value="{{ address.phone or '+1 (555) 234-8901' }}" style="width: 100%; padding: 0.65rem; border: 1px solid #cbd5e1; border-radius: 6px;">
+        </div>
+      </div>
+
+      <div style="margin-bottom: 1rem;">
+        <label for="street_address" style="display: block; font-size: 0.85rem; font-weight: 700; color: #334155; margin-bottom: 4px;">Street & House / Apartment *</label>
+        <input type="text" id="street_address" name="street_address" value="{{ address.street_address or '452 Innovation Blvd, Suite 300' }}" required style="width: 100%; padding: 0.65rem; border: 1px solid #cbd5e1; border-radius: 6px;">
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1.2fr 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+        <div>
+          <label for="city" style="display: block; font-size: 0.85rem; font-weight: 700; color: #334155; margin-bottom: 4px;">City *</label>
+          <input type="text" id="city" name="city" value="{{ address.city or 'San Francisco' }}" required style="width: 100%; padding: 0.65rem; border: 1px solid #cbd5e1; border-radius: 6px;">
+        </div>
+        <div>
+          <label for="state" style="display: block; font-size: 0.85rem; font-weight: 700; color: #334155; margin-bottom: 4px;">State *</label>
+          <input type="text" id="state" name="state" value="{{ address.state or 'CA' }}" required style="width: 100%; padding: 0.65rem; border: 1px solid #cbd5e1; border-radius: 6px;">
+        </div>
+        <div>
+          <label for="postal_code" style="display: block; font-size: 0.85rem; font-weight: 700; color: #334155; margin-bottom: 4px;">Postal / ZIP Code *</label>
+          <input type="text" id="postal_code" name="postal_code" value="{{ address.postal_code or '94107' }}" placeholder="94107" style="width: 100%; padding: 0.65rem; border: 1px solid #cbd5e1; border-radius: 6px; font-family: monospace;">
+        </div>
+      </div>
+
+      <div style="margin-bottom: 1.5rem;">
+        <label for="instructions" style="display: block; font-size: 0.85rem; font-weight: 700; color: #334155; margin-bottom: 4px;">Rider Delivery Notes</label>
+        <input type="text" id="instructions" name="instructions" value="Leave at receptionist front desk" style="width: 100%; padding: 0.65rem; border: 1px solid #cbd5e1; border-radius: 6px;">
+      </div>
+
+      <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #f1f5f9; padding-top: 1.5rem;">
+        <a href="/quickbite/cart" style="color: #64748b; text-decoration: none; font-size: 0.9rem;">&larr; Back to Cart</a>
+        <button type="submit" id="btn-to-payment" class="btn" style="background: #ea580c; color: white; padding: 0.75rem 2rem; border-radius: 8px; font-weight: 700; font-size: 1rem; border: none; cursor: pointer;">
+          Continue to Payment &rarr;
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

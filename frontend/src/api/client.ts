@@ -97,6 +97,14 @@ export interface TestCaseDetail {
   risk_level?: string;
   why_it_matters?: string;
   evidence_needed?: string;
+  status?: string;
+  duration_sec?: number;
+  priority_score?: number;
+  steps?: Array<{ action: string; selector?: string; value?: string; description: string }>;
+  assertions?: Array<{ type: string; target: string; expected?: string; message?: string }>;
+  assertion_results?: Array<{ type: string; passed: boolean; actual: string; message: string }>;
+  curiosity_breakdown?: any;
+  risk_reason?: string;
   execution?: {
     id: string;
     status: string;
@@ -189,11 +197,51 @@ export interface BugFinding {
     timestamp?: string;
   }> | string;
   screenshot_url?: string;
+  annotated_screenshot_url?: string;
+  screenshot_before_url?: string;
+  screenshot_after_url?: string;
+  failed_step_index?: number;
   console_errors: string[] | string;
   network_status?: Record<string, any>;
   regression_test_id?: string;
   replay_attempts: number;
   created_at: string;
+}
+
+export interface SampleTarget {
+  id: string;
+  name: string;
+  brand: string;
+  category: string;
+  base_url: string;
+  description: string;
+  seeded_defect_count: number;
+  expected_duration: string;
+  workflows: string[];
+  suggested_objectives: string[];
+  reset_url: string;
+}
+
+export interface TestStepExecution {
+  id: string;
+  run_id: string;
+  test_case_id: string;
+  step_index: number;
+  action: string;
+  description: string;
+  selector?: string;
+  value?: string;
+  status: string;
+  duration_sec: number;
+  url_before?: string;
+  url_after?: string;
+  assertion_results?: Array<{ type: string; passed: boolean; actual: string; message: string }>;
+  error_message?: string;
+  screenshot_before_url?: string;
+  screenshot_after_url?: string;
+  screenshot_failure_url?: string;
+  screenshot_annotated_url?: string;
+  created_at?: string;
 }
 
 export interface RegressionTest {
@@ -211,6 +259,8 @@ export interface RegressionTest {
   is_approved?: boolean;
   approval_status?: string;
   provenance?: string;
+  structured_steps?: Array<{ action: string; selector?: string; value?: string; description: string }>;
+  assertions?: Array<{ type: string; target: string; expected?: string; message?: string }>;
 }
 
 export interface RegressionRunResult {
@@ -265,6 +315,14 @@ export interface BenchmarkMetrics {
   reproducibility_percent: string;
   journey_coverage: number;
   journey_coverage_percent: string;
+  screenshot_coverage?: number;
+  screenshot_coverage_percent?: string;
+  annotated_failure_coverage?: number;
+  annotated_failure_coverage_percent?: string;
+  total_executed_steps?: number;
+  steps_with_screenshot?: number;
+  total_failed_steps?: number;
+  failed_with_annotated?: number;
   true_positives: number;
   false_positives: number;
   total_planted_defects: number;
@@ -368,6 +426,10 @@ export const rerunRegressionTest = (testId: string) =>
   api.post<RegressionRunResult>(`/regression-tests/${testId}/run`).then(res => res.data);
 export const rerunAllRegressionTests = () =>
   api.post<RegressionSuiteResult>('/regression-tests/run-all').then(res => res.data);
+export const autoPromoteRegressionTests = () =>
+  api.post<{ added_count: number; total_count: number; message: string }>('/regression-tests/auto-promote').then(res => res.data);
+export const deleteRegressionTest = (testId: string) =>
+  api.delete<{ id: string; message: string }>(`/regression-tests/${testId}`).then(res => res.data);
 
 export const fetchBenchmarkGroundTruth = (suite: string = 'devstore') =>
   api.get<GroundTruthRegistry>(`/benchmark/ground-truth?suite=${encodeURIComponent(suite)}`).then(res => res.data);
@@ -375,6 +437,22 @@ export const fetchRunBenchmarkResults = (runId: string, suite: string = 'devstor
   api.get<BenchmarkReport>(`/benchmark/results/${runId}?suite=${encodeURIComponent(suite)}`).then(res => res.data);
 export const runBenchmarkSuite = (targetUrl: string = 'http://127.0.0.1:5001', suite: string = 'devstore') =>
   api.post<BenchmarkReport>(`/benchmark/run?target_url=${encodeURIComponent(targetUrl)}&suite=${encodeURIComponent(suite)}`).then(res => res.data);
+
+// Target Registry & Multi-App Management
+export const fetchSampleTargets = () =>
+  api.get<SampleTarget[]>('/targets').then(res => res.data);
+export const resetTarget = (targetId: string) =>
+  api.post<{ success: boolean; message: string }>(`/targets/${targetId}/reset`).then(res => res.data);
+
+// Step-by-Step Evidence
+export const fetchRunStepExecutions = (runId: string) =>
+  api.get<TestStepExecution[]>(`/runs/${runId}/steps`).then(res => res.data);
+export const fetchTestStepExecutions = (testId: string) =>
+  api.get<TestStepExecution[]>(`/tests/${testId}/steps`).then(res => res.data);
+export const getRunExportUrl = (runId: string, format: string = 'html') =>
+  `/api/v1/runs/${runId}/export?format=${format}`;
+export const getBugExportUrl = (bugId: string, format: string = 'html') =>
+  `/api/v1/bugs/${bugId}/export?format=${format}`;
 
 // Sample App Defect Toggle Helper (Direct to sample app 5001 or through proxy)
 export const fetchSampleAppDefects = () =>

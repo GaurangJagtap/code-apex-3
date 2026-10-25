@@ -8,6 +8,39 @@
   {% block head %}{% endblock %}
 </head>
 <body>
+  {% if request.url.path.startswith('/assesspro') or request.url.path.startswith('/assessment') %}
+  <header class="navbar" role="banner" style="background: #1e1b4b; border-bottom: 2px solid #4338ca;">
+    <a href="/assesspro" class="brand" id="nav-assessment-brand" style="color: white; text-decoration: none; display: flex; align-items: center; gap: 8px;">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#818cf8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l9 4.5V11a10 10 0 0 1-9 9 10 10 0 0 1-9-9V6.5L12 2z"/></svg>
+      <span style="font-weight: 700; color: #f8fafc;">AssessPro <span style="font-size: 0.7rem; background: #3730a3; color: #e0e7ff; padding: 2px 6px; border-radius: 4px; margin-left: 6px;">iMocha-Style QA Target</span></span>
+    </a>
+    <nav class="nav-links" role="navigation" aria-label="Assessment Navigation">
+      <a href="/assesspro" id="nav-assessment-portal" style="color: #e0e7ff; text-decoration: none; font-weight: 500;">Candidate Portal</a>
+      <a href="/assesspro/invitations" id="nav-assessment-invitations" style="color: #e0e7ff; text-decoration: none; font-weight: 500;">Invitations</a>
+      <a href="/assesspro/recruiter" id="nav-assessment-recruiter" style="color: #e0e7ff; text-decoration: none; font-weight: 500;">Recruiter Console</a>
+      <span style="border-left: 1px solid #4338ca; height: 18px; margin: 0 4px;"></span>
+      <a href="/quickbite" id="nav-switch-quickbite" style="color: #fed7aa; font-size: 0.82rem; text-decoration: none;">&rarr; QuickBite Food</a>
+      <a href="/" id="nav-back-devstore" style="color: #a5b4fc; font-size: 0.82rem; text-decoration: none;">&rarr; DevStore</a>
+    </nav>
+  </header>
+  {% elif request.url.path.startswith('/quickbite') %}
+  <header class="navbar" role="banner" style="background: #ffffff; border-bottom: 2px solid #ea580c;">
+    <a href="/quickbite" class="brand" id="nav-qb-brand" style="color: #c2410c; text-decoration: none; display: flex; align-items: center; gap: 8px;">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ea580c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8h1a4 4 0 0 1 0 8h-1"></path><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"></path><line x1="6" y1="1" x2="6" y2="4"></line><line x1="10" y1="1" x2="10" y2="4"></line><line x1="14" y1="1" x2="14" y2="4"></line></svg>
+      <span style="font-weight: 800; color: #9a3412;">QuickBite <span style="font-size: 0.7rem; background: #ffedd5; color: #c2410c; padding: 2px 6px; border-radius: 4px; margin-left: 6px;">Food Delivery Target</span></span>
+    </a>
+    <nav class="nav-links" role="navigation" aria-label="QuickBite Navigation">
+      <a href="/quickbite" id="nav-qb-home" style="color: #475569; text-decoration: none; font-weight: 500;">Home</a>
+      <a href="/quickbite/search" id="nav-qb-search" style="color: #475569; text-decoration: none; font-weight: 500;">Search Food</a>
+      <a href="/quickbite/cart" id="nav-qb-cart" style="color: #475569; text-decoration: none; font-weight: 500;">Cart <span class="qb-badge" id="qb-cart-count">{{ qb_cart_count or 0 }}</span></a>
+      <a href="/quickbite/orders" id="nav-qb-orders" style="color: #475569; text-decoration: none; font-weight: 500;">My Orders</a>
+      <a href="/quickbite/account" id="nav-qb-account" style="color: #475569; text-decoration: none; font-weight: 500;">Account</a>
+      <span style="border-left: 1px solid #fed7aa; height: 18px; margin: 0 4px;"></span>
+      <a href="/assesspro" id="nav-switch-assesspro" style="color: #6366f1; font-size: 0.82rem; text-decoration: none;">&rarr; AssessPro</a>
+      <a href="/" id="nav-back-devstore" style="color: #047857; font-size: 0.82rem; text-decoration: none;">&rarr; DevStore</a>
+    </nav>
+  </header>
+  {% else %}
   <header class="navbar" role="banner">
     <a href="/" class="brand" id="nav-brand">
       <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m18 16 4-4-4-4"/><path d="m6 8-4 4 4 4"/><path d="m14.5 4-5 16"/></svg>
@@ -24,8 +57,12 @@
         <a href="/login" id="nav-login">Sign In</a>
         <a href="/register" id="nav-register">Register</a>
       {% endif %}
+      <span style="border-left: 1px solid #e5e7eb; height: 18px; margin: 0 4px;"></span>
+      <a href="/assesspro" id="nav-switch-assesspro" style="color: #4338ca; font-size: 0.82rem; text-decoration: none;">&rarr; AssessPro</a>
+      <a href="/quickbite" id="nav-switch-quickbite" style="color: #c2410c; font-size: 0.82rem; text-decoration: none;">&rarr; QuickBite</a>
     </nav>
   </header>
+  {% endif %}
 
   <main class="container" role="main">
     {% block content %}{% endblock %}

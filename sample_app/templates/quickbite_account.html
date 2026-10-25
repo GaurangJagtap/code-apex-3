@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+
+{% block title %}My Profile — QuickBite{% endblock %}
+
+{% block content %}
+<div style="max-width: 800px; margin: 1.5rem auto;">
+  <div class="assess-card">
+    <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1.5rem; border-bottom: 1px solid #f1f5f9; padding-bottom: 1rem;">
+      <div style="width: 56px; height: 56px; background: #ffedd5; border: 2px solid #fed7aa; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.5rem;">
+        🍔
+      </div>
+      <div>
+        <h1 id="qb-account-name" style="font-size: 1.5rem; color: #1e293b; font-weight: 800; margin: 0;">{{ user.name or 'Alex Eats' }}</h1>
+        <p style="color: #64748b; font-size: 0.9rem; margin: 2px 0 0;">{{ user.email or 'alex.eats@quickbite.io' }} &bull; QuickBite Gourmet Member</p>
+      </div>
+    </div>
+
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
+      <div>
+        <h3 style="font-size: 1.05rem; font-weight: 700; color: #1e293b; margin-bottom: 0.75rem;">Default Saved Address</h3>
+        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 1rem; font-size: 0.85rem; color: #475569;">
+          <div style="font-weight: 700; color: #1e293b; margin-bottom: 4px;">Primary Delivery (Home)</div>
+          <div>452 Innovation Blvd, Suite 300</div>
+          <div>San Francisco, CA 94107</div>
+          <div style="margin-top: 6px; color: #64748b;">Phone: +1 (555) 234-8901</div>
+        </div>
+      </div>
+
+      <div>
+        <h3 style="font-size: 1.05rem; font-weight: 700; color: #1e293b; margin-bottom: 0.75rem;">Payment Preferences</h3>
+        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 1rem; font-size: 0.85rem; color: #475569;">
+          <div style="font-weight: 700; color: #1e293b; margin-bottom: 4px;">Synthetic Credit Card</div>
+          <div style="font-family: monospace;">Visa ending in &bull;&bull;&bull;&bull; 4242</div>
+          <div style="color: #047857; font-weight: 600; margin-top: 6px;">✓ Sandbox Simulator Ready</div>
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-top: 2rem; border-top: 1px solid #f1f5f9; padding-top: 1.25rem; display: flex; justify-content: space-between;">
+      <a href="/quickbite" class="btn" style="background: #f1f5f9; color: #334155; border: 1px solid #cbd5e1; padding: 0.6rem 1.25rem; border-radius: 6px; text-decoration: none; font-weight: 600;">
+        &larr; Back to Food
+      </a>
+      <a href="/quickbite/orders" class="btn" style="background: #ea580c; color: white; padding: 0.6rem 1.25rem; border-radius: 6px; text-decoration: none; font-weight: 700;">
+        My Orders &rarr;
+      </a>
+    </div>
+  </div>
+</div>
+{% endblock %}

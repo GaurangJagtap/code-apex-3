@@ -204,11 +204,17 @@ class TesterAgent:
         # Extract base root url (e.g. http://127.0.0.1:5001) without /assessment suffix
         if clean_url.endswith("/assessment"):
             base_url = clean_url[:-len("/assessment")]
+        elif clean_url.endswith("/assesspro"):
+            base_url = clean_url[:-len("/assesspro")]
+        elif clean_url.endswith("/quickbite"):
+            base_url = clean_url[:-len("/quickbite")]
         else:
             base_url = clean_url
 
-        is_assessment = ("/assessment" in clean_url or "assessment" in clean_url or "assessment" in app_description.lower() or "imocha" in app_description.lower())
-        is_devstore = ("5001" in clean_url or "devstore" in clean_url)
+        is_quickbite = ("/quickbite" in clean_url or "quickbite" in clean_url or "food" in app_description.lower())
+        is_assesspro = ("/assesspro" in clean_url or "assesspro" in clean_url)
+        is_assessment = is_assesspro or ("/assessment" in clean_url or "assessment" in clean_url or "assessment" in app_description.lower() or "imocha" in app_description.lower())
+        is_devstore = not is_quickbite and not is_assessment and ("5001" in clean_url or "devstore" in clean_url)
 
         candidates = None
 
@@ -411,6 +417,154 @@ Format:
                             {"type": "not_visible", "target": "#recruiter-candidates-table", "expected": "", "message": "Candidate results table must NOT be disclosed to anonymous visitors (ASSESS-04)"}
                         ],
                         "risk_reason": "Protects sensitive candidate assessment scores and candidate personal records (ASSESS-04).",
+                        "regression_candidate": False
+                    }
+                ]
+            elif is_quickbite:
+                # ----------------- QuickBite Food Delivery Journeys -----------------
+                qb_root = f"{base_url}/quickbite"
+                candidates = [
+                    {
+                        "test_id": "TEST-QB01",
+                        "title": "QuickBite Restaurant Discovery and Menu Navigation",
+                        "objective": "Verify restaurant catalog renders, cuisine filters activate, and restaurant menu items are viewable.",
+                        "category": "Functional behavior and navigation",
+                        "priority": "High",
+                        "path": f"{qb_root}",
+                        "expectation_source": "user_requirement",
+                        "preconditions": "QuickBite food delivery service is active with seeded restaurants and menus.",
+                        "test_data": {"restaurant_id": "REST-01"},
+                        "steps": [
+                            {"action": "goto", "value": f"{qb_root}", "description": "Open QuickBite food delivery homepage"},
+                            {"action": "wait", "value": "400", "description": "Wait for restaurant listings to load"},
+                            {"action": "click", "selector": "#btn-hero-order", "description": "Click 'Find Food Near You' CTA"},
+                            {"action": "click", "selector": "#btn-view-menu-REST-01", "description": "Select 'Artisan Pizza Co.' restaurant"},
+                            {"action": "screenshot", "description": "Capture restaurant menu view"}
+                        ],
+                        "assertions": [
+                            {"type": "element_visible", "target": "#menu-item-ITM-01", "expected": "", "message": "Margherita pizza item card must be visible"},
+                            {"type": "element_visible", "target": "#btn-add-ITM-01", "expected": "", "message": "Add to Cart button must be available"}
+                        ],
+                        "risk_reason": "Ensures customers can discover restaurants and view categorized menu options.",
+                        "regression_candidate": True
+                    },
+                    {
+                        "test_id": "TEST-QB02",
+                        "title": "Cart Dynamic Subtotal Arithmetic Invariant on Quantity Change",
+                        "objective": "Verify cart subtotal dynamically recalculates when item quantity is incremented (QB-BUG-01).",
+                        "category": "Business logic and calculations",
+                        "priority": "High",
+                        "path": f"{qb_root}/cart",
+                        "expectation_source": "deterministic_invariant",
+                        "preconditions": "Cart contains items from Artisan Pizza Co.",
+                        "test_data": {"item_id": "ITM-01", "expected_subtotal": "$29.98"},
+                        "steps": [
+                            {"action": "goto", "value": f"{qb_root}/restaurant/REST-01", "description": "Open Artisan Pizza Co. menu"},
+                            {"action": "click", "selector": "#btn-add-ITM-01", "description": "Add Margherita Pizza to cart"},
+                            {"action": "goto", "value": f"{qb_root}/cart", "description": "Navigate to Cart view"},
+                            {"action": "click", "selector": "#btn-qty-plus-ITM-01", "description": "Click '+' to increment pizza quantity to 2"},
+                            {"action": "screenshot", "description": "Capture cart subtotal after quantity increment"}
+                        ],
+                        "assertions": [
+                            {"type": "text_contains", "target": "#cart-subtotal", "expected": "$29.98", "message": "Cart subtotal must dynamically recalculate to $29.98 after incrementing quantity (QB-BUG-01)"}
+                        ],
+                        "risk_reason": "Prevents arithmetic defects where item quantity changes fail to recalculate subtotal (QB-BUG-01).",
+                        "regression_candidate": False
+                    },
+                    {
+                        "test_id": "TEST-QB03",
+                        "title": "Delivery Address Required Postal Code Boundary Validation",
+                        "objective": "Verify address form enforces valid 5-digit postal code and rejects 1-character entries (QB-BUG-02).",
+                        "category": "Form validation and input boundaries",
+                        "priority": "High",
+                        "path": f"{qb_root}/checkout/address",
+                        "expectation_source": "deterministic_invariant",
+                        "preconditions": "Customer has items in cart and proceeds to address entry.",
+                        "test_data": {"postal_code": "1", "expected_rejection": True},
+                        "steps": [
+                            {"action": "goto", "value": f"{qb_root}/restaurant/REST-01", "description": "Open restaurant menu"},
+                            {"action": "click", "selector": "#btn-add-ITM-01", "description": "Add item to cart"},
+                            {"action": "goto", "value": f"{qb_root}/checkout/address", "description": "Open Delivery Address checkout step"},
+                            {"action": "fill", "selector": "#address-street", "value": "100 Broadway St", "description": "Enter street address"},
+                            {"action": "fill", "selector": "#address-city", "value": "New York", "description": "Enter delivery city"},
+                            {"action": "fill", "selector": "#address-postal", "value": "1", "description": "Enter malformed 1-character postal code"},
+                            {"action": "fill", "selector": "#address-phone", "value": "555-0199", "description": "Enter contact phone number"},
+                            {"action": "click", "selector": "#btn-save-address", "description": "Submit address with invalid postal code"},
+                            {"action": "screenshot", "description": "Capture address validation outcome"}
+                        ],
+                        "assertions": [
+                            {"type": "url_not_contains", "target": "url", "expected": "/checkout/payment", "message": "Malformed postal code must be rejected and prevented from proceeding to payment (QB-BUG-02)"},
+                            {"type": "element_visible", "target": "#address-error", "expected": "", "message": "Validation alert must be displayed for invalid postal code"}
+                        ],
+                        "risk_reason": "Prevents delivery failure and dispatch errors caused by incomplete postal codes (QB-BUG-02).",
+                        "regression_candidate": False
+                    },
+                    {
+                        "test_id": "TEST-QB04",
+                        "title": "Payment Submission Non-Idempotent Duplicate Order on Rapid Click",
+                        "objective": "Verify payment submit button disables immediately to prevent duplicate orders on double click (QB-BUG-03).",
+                        "category": "Transaction and workflow integrity",
+                        "priority": "High",
+                        "path": f"{qb_root}/checkout/payment",
+                        "expectation_source": "deterministic_invariant",
+                        "preconditions": "Customer is on payment simulation step with valid order details.",
+                        "test_data": {"action": "double_click_pay"},
+                        "steps": [
+                            {"action": "goto", "value": f"{qb_root}/restaurant/REST-01", "description": "Open menu"},
+                            {"action": "click", "selector": "#btn-add-ITM-01", "description": "Add item to cart"},
+                            {"action": "goto", "value": f"{qb_root}/checkout/payment", "description": "Open Payment simulation step"},
+                            {"action": "double_click", "selector": "#btn-submit-payment", "description": "Rapidly click payment submit CTA twice"},
+                            {"action": "screenshot", "description": "Capture payment button submission state"}
+                        ],
+                        "assertions": [
+                            {"type": "element_disabled", "target": "#btn-submit-payment", "expected": "", "message": "Payment submit button must disable immediately upon click to prevent duplicate charges (QB-BUG-03)"}
+                        ],
+                        "risk_reason": "Protects customers from duplicate credit card authorizations and duplicate order fulfillment (QB-BUG-03).",
+                        "regression_candidate": False
+                    },
+                    {
+                        "test_id": "TEST-QB05",
+                        "title": "Payment Simulator Declined Transaction Order Confirmation Invariant",
+                        "objective": "Verify declined payment halts checkout and does NOT falsely confirm an order (QB-BUG-04).",
+                        "category": "Transaction and workflow integrity",
+                        "priority": "Critical",
+                        "path": f"{qb_root}/checkout/payment",
+                        "expectation_source": "deterministic_invariant",
+                        "preconditions": "Customer selects declined payment simulation option.",
+                        "test_data": {"payment_method": "sim_declined"},
+                        "steps": [
+                            {"action": "goto", "value": f"{qb_root}/restaurant/REST-01", "description": "Open restaurant menu"},
+                            {"action": "click", "selector": "#btn-add-ITM-01", "description": "Add item to cart"},
+                            {"action": "goto", "value": f"{qb_root}/checkout/payment", "description": "Open checkout payment step"},
+                            {"action": "click", "selector": "#pay-method-declined", "description": "Select 'Simulated Declined Card' payment method"},
+                            {"action": "click", "selector": "#btn-submit-payment", "description": "Submit payment with declined card"},
+                            {"action": "screenshot", "description": "Capture payment decline outcome"}
+                        ],
+                        "assertions": [
+                            {"type": "url_not_contains", "target": "url", "expected": "/confirmation", "message": "Declined card must NOT redirect to order confirmation (QB-BUG-04)"},
+                            {"type": "element_visible", "target": "#payment-error-alert", "expected": "", "message": "Declined payment error message must be shown"}
+                        ],
+                        "risk_reason": "Prevents unauthorized order placement without successful payment capture (QB-BUG-04).",
+                        "regression_candidate": False
+                    },
+                    {
+                        "test_id": "TEST-QB06",
+                        "title": "Order Confirmation Authoritative Status Discrepancy Invariant",
+                        "objective": "Verify confirmation screen matches authoritative backend order status (QB-BUG-05).",
+                        "category": "Business logic and calculations",
+                        "priority": "High",
+                        "path": f"{qb_root}/order/ORD-SAMPLE-99/confirmation",
+                        "expectation_source": "deterministic_invariant",
+                        "preconditions": "Customer views order confirmation page.",
+                        "test_data": {"order_id": "ORD-SAMPLE-99"},
+                        "steps": [
+                            {"action": "goto", "value": f"{qb_root}/order/ORD-SAMPLE-99/confirmation", "description": "Open order confirmation view"},
+                            {"action": "screenshot", "description": "Capture confirmation status against backend state"}
+                        ],
+                        "assertions": [
+                            {"type": "not_visible", "target": "#flag-order-discrepancy", "expected": "", "message": "Confirmation screen must NOT claim confirmed when backend status is unconfirmed (QB-BUG-05)"}
+                        ],
+                        "risk_reason": "Ensures customer order tracking status is authoritative and synchronized with backend database (QB-BUG-05).",
                         "regression_candidate": False
                     }
                 ]

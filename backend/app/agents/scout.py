@@ -62,6 +62,9 @@ class ScoutAgent:
                 .filter(Boolean);
         }""")
 
+        base_parsed = urlparse(self.base_url)
+        base_path = base_parsed.path.rstrip("/")
+
         valid_links = []
         for raw in raw_links:
             if raw.startswith("javascript:") or raw.startswith("mailto:") or raw.startswith("#"):
@@ -71,15 +74,23 @@ class ScoutAgent:
             parsed = urlparse(full_url)
             norm_url = f"{parsed.scheme}://{parsed.netloc}{parsed.path}"
             
-            if is_url_allowed(norm_url) and parsed.netloc == urlparse(self.base_url).netloc:
-                base_path = urlparse(self.base_url).path.rstrip('/')
-                # If target base URL has a specific subpath (e.g. /assessment), stay within that section
-                if base_path and not parsed.path.startswith(base_path):
+            # Scope check: origin must match base_url origin
+            if not is_url_allowed(norm_url) or parsed.netloc != base_parsed.netloc:
+                continue
+
+            # Path scoping: If testing a sub-application (e.g. /assessment), restrict to that path prefix
+            if base_path and base_path != "":
+                if not (parsed.path == base_path or parsed.path.startswith(base_path + "/")):
+                    continue
+            else:
+                # If testing root DevStore, keep e-commerce scope separate from sample sub-apps
+                sub_app_prefixes = ("/assessment", "/assesspro", "/quickbite")
+                if any(parsed.path == p or parsed.path.startswith(p + "/") for p in sub_app_prefixes):
                     continue
 
-                valid_links.append(norm_url)
-                if norm_url not in self.visited_urls:
-                    self.discovered_urls.add(norm_url)
+            valid_links.append(norm_url)
+            if norm_url not in self.visited_urls:
+                self.discovered_urls.add(norm_url)
 
         self.visited_urls.add(current_url)
         self.navigation_graph[current_url] = list(set(valid_links))

@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+
+{% block title %}Search Results — QuickBite{% endblock %}
+
+{% block content %}
+<div style="max-width: 1050px; margin: 1.5rem auto;">
+  <!-- Search Header -->
+  <div style="margin-bottom: 2rem;">
+    <form action="/quickbite/search" method="GET" style="display: flex; gap: 8px; max-width: 650px;">
+      <input type="text" id="qb-search-input" name="q" value="{{ query or '' }}" placeholder="Search restaurants or cuisines..." class="form-control" style="flex: 1; padding: 0.75rem 1rem; border: 2px solid #fed7aa; border-radius: 8px; font-size: 1rem;">
+      <button type="submit" id="btn-qb-search" class="btn" style="background: #ea580c; color: white; border: none; padding: 0.75rem 1.5rem; border-radius: 8px; font-weight: 700;">
+        Search
+      </button>
+    </form>
+    <div style="margin-top: 1rem; font-size: 0.9rem; color: #64748b;">
+      Showing results for "<strong id="search-query-text">{{ query or 'All Kitchens' }}</strong>" (<span id="search-result-count">{{ results | length }}</span> restaurants found)
+    </div>
+  </div>
+
+  {% if results %}
+  <div class="restaurant-grid">
+    {% for r in results %}
+    <a href="/quickbite/restaurant/{{ r.id }}" id="search-result-{{ r.id }}" class="restaurant-card">
+      <div style="height: 130px; background: {{ r.bg_color or '#f8fafc' }}; display: flex; align-items: center; justify-content: center; font-size: 3rem;">
+        {{ r.emoji or '🍽️' }}
+      </div>
+      <div style="padding: 1.25rem;">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+          <h3 style="font-size: 1.15rem; color: #1e293b; font-weight: 700; margin-bottom: 4px;">{{ r.name }}</h3>
+          <span style="font-size: 0.85rem; background: #ecfdf5; color: #065f46; font-weight: 700; padding: 2px 6px; border-radius: 4px;">
+            ★ {{ r.rating }}
+          </span>
+        </div>
+        <p style="color: #64748b; font-size: 0.85rem; margin-bottom: 0.75rem;">{{ r.cuisine }} &bull; {{ r.price_range }}</p>
+        <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.8rem; color: #475569; border-top: 1px solid #f1f5f9; padding-top: 0.75rem;">
+          <span>🕒 {{ r.delivery_time }} mins</span>
+          <span>🛵 Delivery: ${{ "%.2f"|format(r.delivery_fee) }}</span>
+        </div>
+      </div>
+    </a>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div id="qb-empty-results" style="text-align: center; padding: 3rem; background: white; border: 1px solid #e2e8f0; border-radius: 12px;">
+    <div style="font-size: 3rem; margin-bottom: 1rem;">🔍</div>
+    <h3 style="color: #1e293b; font-size: 1.25rem; margin-bottom: 0.5rem;">No kitchens found matching "{{ query }}"</h3>
+    <p style="color: #64748b; font-size: 0.9rem; margin-bottom: 1.5rem;">Try searching for "Burger", "Pizza", "Ramen", or "Salad".</p>
+    <a href="/quickbite" class="btn" style="background: #ea580c; color: white; padding: 0.6rem 1.25rem; border-radius: 6px; text-decoration: none; font-weight: 600;">
+      Browse All Restaurants
+    </a>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

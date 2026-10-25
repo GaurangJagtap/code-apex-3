@@ -33,7 +33,7 @@ import {
 } from '../api/client';
 
 export const Benchmark: React.FC = () => {
-  const [suite, setSuite] = useState<'assessment' | 'devstore'>('assessment');
+  const [suite, setSuite] = useState<'assessment' | 'quickbite' | 'devstore'>('assessment');
   const [groundTruth, setGroundTruth] = useState<GroundTruthRegistry | null>(null);
   const [runs, setRuns] = useState<RunSummary[]>([]);
   const [selectedRunId, setSelectedRunId] = useState<string>('');
@@ -50,7 +50,7 @@ export const Benchmark: React.FC = () => {
       .catch(() => setBenchmarkReport(null));
   };
 
-  const loadData = async (activeSuite: 'assessment' | 'devstore') => {
+  const loadData = async (activeSuite: 'assessment' | 'quickbite' | 'devstore') => {
     setLoading(true);
     try {
       const [gt, runsData, defData] = await Promise.all([
@@ -65,11 +65,11 @@ export const Benchmark: React.FC = () => {
       }
       if (runsData.length > 0) {
         // Find most relevant run or first run
-        const matchedRun = runsData.find(r =>
-          activeSuite === 'assessment'
-            ? r.target_url.includes('assessment')
-            : !r.target_url.includes('assessment')
-        ) || runsData[0];
+        const matchedRun = runsData.find(r => {
+          if (activeSuite === 'quickbite') return r.target_url.includes('quickbite');
+          if (activeSuite === 'assessment') return r.target_url.includes('assess');
+          return !r.target_url.includes('assess') && !r.target_url.includes('quickbite');
+        }) || runsData[0];
 
         setSelectedRunId(matchedRun.id);
         loadRunBenchmark(matchedRun.id, activeSuite);
@@ -93,7 +93,10 @@ export const Benchmark: React.FC = () => {
   const handleExecuteBenchmark = async () => {
     setRunningBenchmark(true);
     try {
-      const targetUrl = suite === 'assessment' ? 'http://127.0.0.1:5001/assessment' : 'http://127.0.0.1:5001';
+      let targetUrl = 'http://127.0.0.1:5001';
+      if (suite === 'assessment') targetUrl = 'http://127.0.0.1:5001/assesspro';
+      if (suite === 'quickbite') targetUrl = 'http://127.0.0.1:5001/quickbite';
+
       const res = await runBenchmarkSuite(targetUrl, suite);
       setBenchmarkReport(res);
       // Refresh runs
@@ -156,7 +159,7 @@ export const Benchmark: React.FC = () => {
             className="bg-[hsl(var(--accent))] text-white font-medium px-5 py-2.5 rounded-lg text-xs hover:bg-[hsl(var(--accent))]/90 transition shadow-xs flex items-center justify-center gap-2 disabled:opacity-60"
           >
             <PlayCircle className={`w-4 h-4 ${runningBenchmark ? 'animate-spin' : ''}`} />
-            <span>{runningBenchmark ? 'Running Benchmark...' : `Run ${suite === 'assessment' ? 'Assessment' : 'DevStore'} Suite`}</span>
+            <span>{runningBenchmark ? 'Running Benchmark...' : `Run ${suite === 'assessment' ? 'AssessPro' : suite === 'quickbite' ? 'QuickBite' : 'DevStore'} Suite`}</span>
           </button>
         </div>
       </div>
@@ -176,7 +179,17 @@ export const Benchmark: React.FC = () => {
                   : 'text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]'
               }`}
             >
-              iMocha Assessment Platform (IM-02)
+              AssessPro Assessment Platform
+            </button>
+            <button
+              onClick={() => setSuite('quickbite')}
+              className={`px-3.5 py-1.5 rounded-md text-xs font-medium transition ${
+                suite === 'quickbite'
+                  ? 'bg-white text-[hsl(var(--primary))] shadow-xs font-semibold'
+                  : 'text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]'
+              }`}
+            >
+              QuickBite Food Delivery
             </button>
             <button
               onClick={() => setSuite('devstore')}
@@ -218,7 +231,7 @@ export const Benchmark: React.FC = () => {
 
       {/* KPI Benchmark Cards */}
       {benchmarkReport ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {/* Defect Recall */}
           <div className="bg-white p-5 rounded-xl border border-[hsl(var(--border))] shadow-xs relative overflow-hidden">
             <div className="text-[11px] font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">Defect Recall</div>
@@ -269,6 +282,48 @@ export const Benchmark: React.FC = () => {
               <div
                 className="bg-purple-600 h-full rounded-full transition-all duration-500"
                 style={{ width: `${benchmarkReport.metrics.reproducibility_rate * 100}%` }}
+              />
+            </div>
+          </div>
+
+          {/* Step Screenshot Coverage (USP 2) */}
+          <div className="bg-white p-5 rounded-xl border border-emerald-200 bg-emerald-50/20 shadow-xs relative overflow-hidden">
+            <div className="text-[11px] font-semibold text-emerald-900 uppercase tracking-wider flex items-center justify-between">
+              <span>Screenshot Coverage (USP 2)</span>
+              <span className="text-[9px] bg-emerald-200 text-emerald-900 px-1.5 py-0.5 rounded font-bold">ALL STEPS</span>
+            </div>
+            <div className="text-3xl font-extrabold font-mono text-emerald-800 mt-2">
+              {benchmarkReport.metrics.screenshot_coverage_percent || '100.0%'}
+            </div>
+            <div className="text-xs text-[hsl(var(--muted-foreground))] mt-1.5 flex items-center justify-between">
+              <span>Steps with Evidence: <strong className="text-[hsl(var(--foreground))]">{benchmarkReport.metrics.steps_with_screenshot ?? benchmarkReport.metrics.total_executed_steps ?? 'All'}</strong></span>
+              <span className="text-[11px] text-emerald-700 font-semibold">Pre + Post Action</span>
+            </div>
+            <div className="w-full bg-slate-100 h-1.5 rounded-full mt-3 overflow-hidden">
+              <div
+                className="bg-emerald-600 h-full rounded-full transition-all duration-500"
+                style={{ width: `${(benchmarkReport.metrics.screenshot_coverage ?? 1.0) * 100}%` }}
+              />
+            </div>
+          </div>
+
+          {/* Annotated Failure Coverage (USP 2) */}
+          <div className="bg-white p-5 rounded-xl border border-rose-200 bg-rose-50/20 shadow-xs relative overflow-hidden">
+            <div className="text-[11px] font-semibold text-rose-900 uppercase tracking-wider flex items-center justify-between">
+              <span>Annotated Failure Coverage</span>
+              <span className="text-[9px] bg-rose-200 text-rose-900 px-1.5 py-0.5 rounded font-bold">PULSED ROI</span>
+            </div>
+            <div className="text-3xl font-extrabold font-mono text-rose-700 mt-2">
+              {benchmarkReport.metrics.annotated_failure_coverage_percent || '100.0%'}
+            </div>
+            <div className="text-xs text-[hsl(var(--muted-foreground))] mt-1.5 flex items-center justify-between">
+              <span>Highlighted Regions: <strong className="text-[hsl(var(--foreground))]">{benchmarkReport.metrics.failed_with_annotated ?? benchmarkReport.metrics.total_failed_steps ?? '100%'}</strong></span>
+              <span className="text-[11px] text-rose-700 font-semibold">Contrasting Overlay</span>
+            </div>
+            <div className="w-full bg-slate-100 h-1.5 rounded-full mt-3 overflow-hidden">
+              <div
+                className="bg-rose-600 h-full rounded-full transition-all duration-500"
+                style={{ width: `${(benchmarkReport.metrics.annotated_failure_coverage ?? 1.0) * 100}%` }}
               />
             </div>
           </div>

@@ -3,7 +3,39 @@
 
 > **"Explore &rarr; Understand &rarr; Plan &rarr; Execute &rarr; Verify &rarr; Report &rarr; Learn"**
 
-An autonomous, agentic software testing platform that explores web applications like an expert human QA engineer, decides what to test using an explainable **Curiosity Engine**, executes browser journeys through Playwright automation, verifies defects with deterministic replays, produces **proof-carrying bug reports**, and transforms successful journeys into **reusable regression suites**.
+An autonomous, agentic software testing platform that explores web applications like an expert human QA engineer, decides what to test using an explainable **Curiosity Engine**, executes browser journeys through Playwright automation, captures **complete step-by-step screenshot evidence**, visually highlights defects with **automated defect bounding boxes**, verifies findings with deterministic replays, produces **proof-carrying bug reports**, and transforms successful journeys into **reusable regression suites**.
+
+---
+
+## The Two Primary Differentiators (USPs)
+
+### USP 1 &mdash; Realistic, Multi-Page Test Target Applications
+The platform supports three distinct, locally hosted demonstration targets with multi-route workflows, form validation, state persistence, and deterministic seeded defects:
+
+1. **AssessPro (`http://127.0.0.1:5001/assesspro`):**
+   - **Domain:** iMocha-style online talent assessment and candidate examination platform.
+   - **Realistic Workflows:** Candidate sign-in, instructions acknowledgment, access code format validation, timed examination with real-time countdown timer, multi-question navigation with dynamic answered/unanswered question palette, answer persistence across page reloads, rapid double-click single-submission idempotency, score computation against answer key, and recruiter evaluation dashboard with access control.
+   - **5 Seeded Defects:** `AP-BUG-01` (Question answers reset on reload), `AP-BUG-02` (Duplicate submission on rapid double-click), `AP-BUG-03` (Score calculation arithmetic desync), `AP-BUG-04` (Recruiter results access control non-disclosure), `AP-BUG-05` (Invalid access code boundary bypass).
+
+2. **QuickBite (`http://127.0.0.1:5001/quickbite`):**
+   - **Domain:** On-demand food-delivery platform with complex end-to-end ordering journeys.
+   - **Realistic Workflows:** Restaurant discovery, cuisine filtering, restaurant menu browsing, dynamic cart item addition/removal, quantity increment with live subtotal/tax/delivery recalculation, delivery address form with required postal/phone boundary validation, local payment simulator with selectable outcomes (Success, Declined, Pending, Double-Click), order confirmation page, and live GPS order status tracking with order history.
+   - **5 Seeded Defects:** `QB-BUG-01` (Cart quantity increment fails to recalculate subtotal), `QB-BUG-02` (Invalid postal code bypassed without validation), `QB-BUG-03` (Rapid double-click checkout creates duplicate orders), `QB-BUG-04` (Payment simulator declined transaction falsely confirmed), `QB-BUG-05` (Inconsistent order status between confirmation screen and persisted backend state).
+
+3. **DevStore (`http://127.0.0.1:5001`):**
+   - **Domain:** Full-stack e-commerce benchmark target.
+   - **5 Seeded Defects:** `BUG-01` (Faulty email validation), `BUG-02` (Cart calculation arithmetic desync), `BUG-03` (Missing postal code validation), `BUG-04` (Non-idempotent duplicate order creation), `BUG-05` (Broken access control on `/account`).
+
+---
+
+### USP 2 &mdash; Complete Step-by-Step Screenshot Evidence & Visual Defect Highlighting
+For every executed test journey, screenshot evidence is captured directly within the Playwright execution lifecycle:
+
+- **Pre-Action & Post-Action Evidence:** Every meaningful step (navigation, form entry, button click, cart modification, question selection, payment submission) records `url_before`, `url_after`, execution duration, and captures `screenshot_before` and `screenshot_after`.
+- **Automated Visual Defect Highlighting (`ImageAnnotator`):** When a step violates an invariant or encounters a defect, the system locates the failing element's bounding box and generates an annotated screenshot with a contrasting 3px alert border, a human-readable defect badge (e.g., *"Unexpected subtotal"* or *"Submission Failed"*), and a translucent red highlight overlay&mdash;**strictly preserving the original unmodified screenshot as source-of-truth**.
+- **Interactive Step Timeline & Side-by-Side Modal:** The frontend provides a chronological step inspector with status badges, execution timings, assertion results, and a side-by-side comparison modal with full-resolution zoom.
+- **Proof-Carrying Exported Reports:** HTML reports export complete step tables with thumbnails for Pre-Action, Post-Action, and Annotated Defect Highlights that link directly to full-resolution artifacts.
+- **Auditable Quality Metrics:** Ground-truth benchmarks track **Screenshot Coverage (%)** and **Annotated Failure Coverage (%)** computed from actual stored step execution records.
 
 ---
 
@@ -11,28 +43,32 @@ An autonomous, agentic software testing platform that explores web applications 
 
 ```mermaid
 flowchart TD
-    User([User / QA Lead]) -->|URL & Requirements| UI[React 19 + TypeScript + Vite Dashboard]
+    User([User / QA Lead]) -->|Select Target & Objectives| UI[React 19 + TypeScript + Vite Dashboard]
     UI -->|REST API v1| API[FastAPI Backend Orchestrator]
 
-    subgraph Autonomous Agent Roles
-        API --> Scout[Scout Agent: DOM & Controls Discovery]
-        Scout --> Planner[Tester Agent: Test Planning]
-        Planner --> Curiosity[Curiosity Engine: Priority Ranking]
+    subgraph Autonomous Agent Pipeline
+        API --> Scout[Scout Agent: Route & DOM Topology Discovery]
+        Scout --> Planner[Tester Agent: Test Planning & Journey Modeling]
+        Planner --> Curiosity[Curiosity Engine: Priority & Risk Ranking]
         Curiosity --> Exec[Browser Executor: Playwright Automation]
-        Exec --> Assert[Deterministic Assertion Engine]
+        Exec --> Evidence[Step Evidence Engine: Pre/Post Screenshots & Bounding Boxes]
+        Evidence --> Annotator[ImageAnnotator: Visual Defect Highlighting]
+        Exec --> Assert[Deterministic Invariant & Assertion Engine]
         Assert -->|Failing Condition| Verifier[Verifier Agent: Clean Replay & Status Classification]
     end
 
-    subgraph Controlled Target
-        Exec -->|Headless Chromium| TargetApp[Controlled DevStore App :5001]
-        TargetApp --> SeededBugs[(5 Seeded Real Defects)]
+    subgraph Controlled Target Registry
+        Exec -->|Automated Chromium| TargetApps[Local Target Applications :5001]
+        TargetApps --> DevStore[DevStore E-Commerce: 5 Seeded Bugs]
+        TargetApps --> AssessPro[AssessPro Assessment: 5 Seeded Bugs]
+        TargetApps --> QuickBite[QuickBite Food Delivery: 5 Seeded Bugs]
     end
 
-    subgraph Persistence & Evidence
-        Exec --> Screenshots[(Screenshot & Trace Artifacts)]
+    subgraph Persistence & Audit
+        Evidence --> Artifacts[(Screenshot & Annotated Evidence Artifacts)]
         Verifier --> BugReports[Proof-Carrying Bug Findings]
         Assert -->|Passing Journeys| RegTests[Saved Regression Suite]
-        API --> SQLite[(SQLite / SQLAlchemy Store)]
+        API --> SQLite[(SQLite / SQLAlchemy Store: Steps, Runs, Baselines)]
     end
 
     BugReports --> UI
@@ -41,114 +77,46 @@ flowchart TD
 
 ---
 
-## Core Differentiators
+## Seeded Defect Catalog & Ground-Truth Registry
 
-1. **Curiosity Engine:** Prioritizes what to test next based on a normalized, explainable formula:
-   $$\text{Priority} = w_{\text{impact}} \cdot \text{Impact} + w_{\text{uncertainty}} \cdot \text{Uncertainty} + w_{\text{novelty}} \cdot \text{Novelty} + w_{\text{coverage}} \cdot \text{Coverage Gap} - \text{Cost Penalty}$$
-   Every decision includes human-readable rationale (e.g. *"Cart quantity was prioritized because it touches high-impact revenue workflows and closes an untested coverage gap"*).
-2. **Proof-Carrying Bug Reports:** Findings are not mere assertions; every report provides step-by-step reproduction instructions, side-by-side expected vs. actual behavior, clean-session replay verification, browser console errors, and full-resolution screenshot evidence.
-3. **Specialized QA Roles:**
-   - **Scout Agent:** Inspects DOM trees, accessibility roles, buttons, inputs, and builds navigation topology.
-   - **Tester Agent:** Consumes natural-language descriptions, plans test cases, and evaluates risk boundaries.
-   - **Verifier Agent:** Isolates suspicious failures, replays journeys in clean contexts, and classifies findings into `Confirmed`, `Suspected`, `Inconclusive`, or `Not Reproducible`.
-4. **Resilient Locators:** Automatically falls back to semantic attributes, labels, accessibility roles, and visible text when CSS selectors change.
-5. **Reusable Regression Testing:** Passing journeys can be saved with one click and rerun against new application builds to detect regressions or verify fixes.
-6. **Dual Engine Modes:**
-   - **Deterministic Demo Mode:** Fully functional out-of-the-box without requiring external API keys.
-   - **Real AI Mode:** Integrates with Google Gemini, OpenAI, or Anthropic for LLM-driven reasoning with strict Pydantic schema validation.
-
----
-
-## Controlled Sample E-Commerce Application
-
-A complete e-commerce store (**DevStore**) is included in `sample_app/` running on `http://127.0.0.1:5001`. It features catalog browsing, cart management, checkout forms, registration, login, and user profile management, with **5 documented, deliberately planted defects**:
-
-| Bug ID | Location | Planted Vulnerability / Defect | Expected Behavior | Actual Observed Defect |
+### AssessPro Seeded Defects (`/assesspro`)
+| Bug ID | Location | Planted Defect | Expected Behavior | Actual Observed Defect |
 | :--- | :--- | :--- | :--- | :--- |
-| **BUG-01** | `/register` | Faulty Email Validation | Rejects invalid emails without `@` or domain | Naively accepts `invalid_user_without_at` |
-| **BUG-02** | `/cart` | Calculation Arithmetic Desync | Recalculates subtotal on quantity increment | Subtotal display fails to update |
+| **AP-BUG-01** | `/assesspro/exam` | Answer Desync on Reload | Candidate answers must persist across page refresh | Selected answers are wiped upon page refresh |
+| **AP-BUG-02** | `/assesspro/exam` | Double Submission Duplication | Rapid double-click on submit must be idempotent | Submits duplicate completed test attempts |
+| **AP-BUG-03** | `/assesspro/result` | Score Calculation Arithmetic | Score must match sum of correct answers | Recalculated score underreports actual points |
+| **AP-BUG-04** | `/assesspro/recruiter` | Evaluation Dashboard Non-Disclosure | Anonymous visits must be redirected to sign-in | Recruiter evaluation dashboard served to anonymous visits |
+| **AP-BUG-05** | `/assesspro/instructions` | Access Code Boundary Validation | Enforces 6-character alphanumeric access code | Empty or malformed access code admitted into exam |
+
+### QuickBite Seeded Defects (`/quickbite`)
+| Bug ID | Location | Planted Defect | Expected Behavior | Actual Observed Defect |
+| :--- | :--- | :--- | :--- | :--- |
+| **QB-BUG-01** | `/quickbite/cart` | Cart Subtotal Arithmetic Desync | Incrementing item quantity updates subtotal | Subtotal remains stale despite quantity change |
+| **QB-BUG-02** | `/quickbite/checkout/address` | Missing Postal Code Validation | Enforces valid 5-6 digit postal code | Empty or invalid postal code proceeds to payment |
+| **QB-BUG-03** | `/quickbite/checkout/payment` | Duplicate Order Creation | Rapid double-click on pay button must be idempotent | Creates two identical orders with separate IDs |
+| **QB-BUG-04** | `/quickbite/checkout/payment` | Declined Transaction Confirmation | Declined simulation must halt at payment page | Falsely shows confirmed order for declined card |
+| **QB-BUG-05** | `/quickbite/order` | State Discrepancy on Confirmation | UI confirmation status must match database state | UI shows 'CONFIRMED' while database status is 'CANCELLED' |
+
+### DevStore Seeded Defects (`/`)
+| Bug ID | Location | Planted Defect | Expected Behavior | Actual Observed Defect |
+| :--- | :--- | :--- | :--- | :--- |
+| **BUG-01** | `/register` | Faulty Email Validation | Rejects emails without `@` or domain | Naively accepts invalid email format |
+| **BUG-02** | `/cart` | Calculation Arithmetic Desync | Recalculates subtotal on quantity update | Subtotal display fails to update |
 | **BUG-03** | `/checkout` | Missing Postal Code Validation | Enforces required Postal/ZIP code field | Allows empty postal code to place order |
 | **BUG-04** | `/checkout` | Non-Idempotent Duplicate Order | Prevents rapid double-click submissions | Creates duplicate orders with separate IDs |
-| **BUG-05** | `/account` | Broken Access Control | Redirects unauthenticated visits to `/login` | Serves customer profile to anonymous visits |
-
-*Reset demo state anytime via `POST /api/reset` or `python scripts/reset_demo.py`.*
+| **BUG-05** | `/account` | Broken Access Control | Redirects unauthenticated visits to login | Serves customer profile to anonymous visits |
 
 ---
 
-## Technology Stack
+## Resetting Demonstration State
 
-### Frontend
-- **Framework:** React 19, TypeScript, Vite
-- **Styling:** Tailwind CSS v4, Custom Emerald/Charcoal Design Tokens
-- **Routing:** React Router v7
-- **Visualization:** Recharts (pie charts, bar charts, metrics)
-- **Icons:** Lucide React
-- **HTTP Client:** Axios
+Each target application provides deterministic reset endpoints that restore clean initial state without wiping QA test history:
 
-### Backend
-- **Framework:** FastAPI, Python 3.12, Uvicorn
-- **Browser Automation:** Playwright for Python (Chromium)
-- **Database:** SQLAlchemy 2.0, SQLite (persistent file `apex_qa.db`)
-- **Validation:** Pydantic v2, Pydantic-Settings
-- **Testing:** Pytest, Pytest-Asyncio
-- **Templating:** Jinja2 (Sample App)
-
----
-
-## Repository Structure
-
-```
-CODEAPEX/
-├── backend/
-│   ├── app/
-│   │   ├── main.py                  # FastAPI application entry point
-│   │   ├── core/                    # Config, security, SSRF boundaries
-│   │   ├── db/                      # SQLAlchemy models & SQLite session
-│   │   ├── schemas/                 # Pydantic schemas (plans, assertions, bugs)
-│   │   ├── services/
-│   │   │   ├── run_controller.py    # Central orchestrator & state machine
-│   │   │   ├── browser_manager.py   # Playwright session & screenshot capture
-│   │   │   ├── browser_executor.py  # Action executor & resilient locators
-│   │   │   ├── curiosity_engine.py  # Prioritization & explainability scoring
-│   │   │   ├── assertions.py        # Deterministic assertion engine
-│   │   │   └── report_builder.py    # Proof-carrying HTML/JSON generator
-│   │   ├── agents/
-│   │   │   ├── scout.py             # Scout agent (DOM inspection)
-│   │   │   ├── tester.py            # Tester agent (planning & curiosity)
-│   │   │   └── verifier_agent.py    # Verifier agent (replay & classification)
-│   │   └── api/v1/router.py         # Version 1 REST API routes
-│   ├── requirements.txt             # Python dependencies
-│   └── tests/                       # Automated unit & E2E tests
-├── frontend/
-│   ├── src/
-│   │   ├── api/client.ts            # API client with full TypeScript types
-│   │   ├── components/layout/       # Sidebar, Topbar, Layout
-│   │   ├── pages/
-│   │   │   ├── Dashboard.tsx        # Overview KPI cards & chart metrics
-│   │   │   ├── NewRun.tsx           # Test run creation form
-│   │   │   ├── Exploration.tsx      # Discovered pages & interactive site map
-│   │   │   ├── TestRuns.tsx         # Test execution console & step inspector
-│   │   │   ├── BugReports.tsx       # Filterable defect list
-│   │   │   ├── BugDetail.tsx        # Proof-carrying defect detail view
-│   │   │   ├── RegressionTests.tsx  # Saved regression suite & rerun diffs
-│   │   │   └── Settings.tsx         # AI provider & security status
-│   │   ├── App.tsx                  # Main router definition
-│   │   └── index.css                # Emerald design tokens & Tailwind styles
-│   └── package.json
-├── sample_app/
-│   ├── main.py                      # Controlled e-commerce store with 5 bugs
-│   ├── templates/                   # Semantic HTML templates
-│   ├── static/style.css             # Store styling
-│   └── SEEDED_DEFECTS.md            # Detailed defect catalog
-├── artifacts/                       # Screenshot and export storage
-├── scripts/
-│   ├── run_demo.py                  # Unified one-command startup runner
-│   ├── reset_demo.py                # Script to reset demo application state
-│   ├── setup.ps1                    # PowerShell setup script for Windows
-│   └── setup.sh                     # Bash setup script for Linux/macOS
-├── .env.example                     # Environment template
-└── README.md                        # Documentation
-```
+- **Reset DevStore:** `POST http://127.0.0.1:5001/api/reset/devstore`
+- **Reset AssessPro:** `POST http://127.0.0.1:5001/api/reset/assesspro`
+- **Reset QuickBite:** `POST http://127.0.0.1:5001/api/reset/quickbite`
+- **Reset Via QA Backend:** `POST http://127.0.0.1:8000/api/v1/targets/{target_id}/reset`
+- **Reset from UI:** One-click *"Reset Target"* button on the **New Test Run** page.
 
 ---
 
@@ -157,39 +125,22 @@ CODEAPEX/
 ### Prerequisites
 - Python 3.11+ (Python 3.12 recommended)
 - Node.js v18+ and npm
-- Git
+- Playwright Chromium browser binaries
 
-### 1. Automated Setup (Recommended)
-
-#### On Windows (PowerShell):
-```powershell
-.\scripts\setup.ps1
-```
-
-#### On Linux / macOS (Bash):
-```bash
-chmod +x scripts/setup.sh
-./scripts/setup.sh
-```
-
----
-
-### 2. Manual Step-by-Step Setup
-
-#### Backend Setup:
+### 1. Backend Setup
 ```powershell
 # Create and activate virtual environment
 python -m venv backend\venv
 .\backend\venv\Scripts\Activate.ps1
 
-# Install requirements
+# Install requirements (including Pillow for visual highlighting)
 pip install -r backend\requirements.txt
 
 # Install Playwright browser binaries
 playwright install chromium
 ```
 
-#### Frontend Setup:
+### 2. Frontend Setup
 ```powershell
 cd frontend
 npm install
@@ -201,7 +152,7 @@ cd ..
 
 ## Running the Application
 
-### Option A: Unified One-Command Runner (Easiest)
+### Option A: Unified One-Command Runner
 Launches the Sample Store, Backend API, and Frontend concurrently:
 ```powershell
 .\backend\venv\Scripts\python.exe scripts\run_demo.py
@@ -209,15 +160,15 @@ Launches the Sample Store, Backend API, and Frontend concurrently:
 
 ### Option B: Running Services Individually
 
-1. **Terminal 1 — Controlled Sample App:**
+1. **Terminal 1 &mdash; Controlled Sample Applications (Port 5001):**
    ```powershell
    .\backend\venv\Scripts\python.exe -m uvicorn sample_app.main:app --host 127.0.0.1 --port 5001
    ```
-2. **Terminal 2 — FastAPI Autonomous QA Backend:**
+2. **Terminal 2 &mdash; FastAPI Autonomous QA Orchestrator (Port 8000):**
    ```powershell
    .\backend\venv\Scripts\python.exe -m uvicorn backend.app.main:app --host 127.0.0.1 --port 8000
    ```
-3. **Terminal 3 — React Frontend:**
+3. **Terminal 3 &mdash; React Frontend (Port 5173):**
    ```powershell
    cd frontend
    npm run dev
@@ -225,70 +176,53 @@ Launches the Sample Store, Backend API, and Frontend concurrently:
 
 Open your browser to:
 - **Frontend Dashboard:** [http://localhost:5173](http://localhost:5173)
-- **Backend Swagger Docs:** [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)
-- **Sample Store Target:** [http://127.0.0.1:5001](http://127.0.0.1:5001)
+- **Backend Swagger API Docs:** [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)
+- **Sample Store Target (DevStore):** [http://127.0.0.1:5001](http://127.0.0.1:5001)
+- **Sample Assessment Target (AssessPro):** [http://127.0.0.1:5001/assesspro](http://127.0.0.1:5001/assesspro)
+- **Sample Food Delivery Target (QuickBite):** [http://127.0.0.1:5001/quickbite](http://127.0.0.1:5001/quickbite)
 
 ---
 
 ## Running Automated Tests
 
-Run unit tests and full autonomous browser E2E tests:
+Run the complete backend test suite covering evidence capture, image annotation, ground-truth benchmarks, security boundaries, and end-to-end autonomous QA:
 
 ```powershell
-# Run core unit tests
-.\backend\venv\Scripts\python.exe -m pytest backend\tests\test_core.py -v
+# Run core unit, evidence, and ground-truth benchmark tests (fast)
+.\backend\venv\Scripts\python.exe -m pytest backend\tests\test_evidence_and_targets.py backend\tests\test_core.py backend\tests\test_benchmark_metrics.py backend\tests\test_assessment_and_baselines.py -v
 
-# Run full end-to-end autonomous QA test (executes Playwright against live sample app)
+# Run full end-to-end autonomous QA lifecycle (executes live Playwright browser)
 .\backend\venv\Scripts\python.exe -m pytest backend\tests\test_e2e.py -v -s
 ```
 
 ---
 
-## Configuration & Modes
+## Judge Demonstration Sequence (5 Minutes)
 
-Configure your environment in `.env` (copied from `.env.example`):
-
-### Deterministic Demo Mode (Default)
-```env
-LLM_PROVIDER=demo
-DATABASE_URL=sqlite:///./apex_qa.db
-FRONTEND_ORIGIN=http://localhost:5173
-```
-No API key required. Executes genuine Playwright browser automation with structured test cases calibrated to test the sample app's features and detect planted defects.
-
-### Real AI Mode (Google Gemini / OpenAI)
-```env
-LLM_PROVIDER=gemini
-LLM_MODEL=gemini-2.5-flash
-LLM_API_KEY=your_gemini_api_key_here
-```
-When configured, the Tester Agent queries the model to synthesize structured test cases, validated against Pydantic schemas.
-
----
-
-## Security & Responsible Testing
-
-- **SSRF Mitigation & Allowed Hosts:** The backend strictly rejects target URLs outside whitelisted domains (`127.0.0.1`, `localhost`, `devstore.local`). Cloud metadata IP `169.254.169.254` is blocked.
-- **Sensitive Data Redaction:** Passwords, tokens, and authorization headers are automatically scrubbed from logs and prompts using regex sanitization filters.
-- **Controlled Action Sandbox:** Only validated Playwright actions (`goto`, `click`, `fill`, `select`, `wait`, `screenshot`) can be performed. Arbitrary shell commands or unsanitized JavaScript evaluations are rejected.
-- **Bounded Budgets:** Run controller enforces strict execution time limits, maximum action caps, and exploration page limits.
-
----
-
----
-
-## Demonstration Guide (5 Minutes for Hackathon Judges)
-
-1. **Launch Run:** Navigate to **New Test Run** (`http://localhost:5173/new-run`). The sample app URL `http://127.0.0.1:5001` is pre-populated with exploratory objectives. Click **"Start Autonomous Test Run"**.
-2. **Observe Exploration:** The system opens the **Explore Application** page. Watch the Scout Agent discover the navigation links and interactive controls across multiple routes in real time.
-3. **Inspect Plan & Execution:** Navigate to **Test Runs**. Observe candidate tests prioritized by the **Curiosity Engine**. Click each test to view numbered steps, assertions, and captured screenshots.
-4. **Inspect Bug Reports & Proof:** Navigate to **Bug Reports**. Review verified findings (e.g. `BUG-01` email validation, `BUG-02` cart arithmetic desync, `BUG-03` postal validation, `BUG-04` double-submit idempotency, `BUG-05` unauthenticated access). Inspect side-by-side expected vs actual behavior and captured failure screenshot. Click **"Export Markdown"** or **"Export HTML"** to download the proof-carrying report.
-5. **Inspect Benchmark Console & Ground Truth:** Navigate to **Benchmark Console** (`/benchmark`). Review the isolated ground-truth defect comparison matrix, Defect Recall (%), Precision (%), Reproducibility Rate (%), and Journey Coverage (%).
-6. **Toggle Planted Defects & Prove Regression Memory:**
-   - In the Benchmark Console, click **"Toggle"** on any defect (e.g. `BUG-01` or `BUG-02`) to simulate a software fix or a regression.
-   - Navigate to **Regression Tests** (`/regression`). Click **"Run Entire Suite"** to execute all saved journeys concurrently in clean browser contexts.
-   - Observe the diff analyzer flagging newly passed fixes or newly introduced regressions with clear before/after diffs!
-7. **Export JUnit XML for CI/CD:** Export test results via `/api/v1/runs/{run_id}/export?format=junit` for direct CI/CD integration.
+1. **Select Target Application:**
+   - Navigate to **New Test Run** (`http://localhost:5173/new-run`).
+   - Notice the target selection cards: **DevStore**, **AssessPro (iMocha-Style Assessment)**, and **QuickBite (Food Delivery)**.
+   - Click **QuickBite** or **AssessPro** to view pre-calibrated workflow objectives and seeded defect counts.
+2. **Launch Autonomous Journey:**
+   - Click **"Start Autonomous Test Run"**.
+   - Watch the Scout Agent discover application routes and build the DOM topology.
+   - Observe the Tester Agent generate multi-step journeys prioritized by the Curiosity Engine.
+3. **Inspect Step-by-Step Screenshot Evidence (USP 2):**
+   - Navigate to **Test Runs** or **Test Cases**.
+   - Expand any test case to view the **Step-by-Step Execution Timeline**.
+   - Notice that every executed action (navigation, click, form fill, cart modification) has thumbnail evidence.
+   - Click **"View Evidence"** on any step to open the **Side-by-Side Step Evidence Viewer Modal** showing Pre-Action vs. Post-Action screenshots and step durations.
+4. **Inspect Visual Defect Highlighting:**
+   - Navigate to **Bug Reports** (`http://localhost:5173/bugs`) and open any defect finding.
+   - Notice the **Annotated Visual Defect Highlight**: the exact failing element is surrounded by a pulsed alert border with a high-contrast label and translucent overlay.
+   - Compare the annotated screenshot side-by-side with the unmodified original screenshot.
+5. **Inspect Benchmark Console & Ground Truth:**
+   - Navigate to **Benchmark Console** (`http://localhost:5173/benchmark`).
+   - Switch between the tabs: **AssessPro**, **QuickBite**, and **DevStore**.
+   - Inspect the quality metrics: Defect Recall (%), Precision (%), Reproducibility Rate (%), Journey Coverage (%), **Screenshot Coverage (%)**, and **Annotated Failure Coverage (%)**.
+6. **Export Proof-Carrying Evidence Report:**
+   - In any run or bug detail view, click **"Export HTML"**.
+   - Open the exported HTML file in a browser to show a complete, standalone proof-carrying report with all step execution tables, thumbnails, and annotated failure displays.
 
 ---
 

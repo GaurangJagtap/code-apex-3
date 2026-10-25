@@ -6,7 +6,7 @@ from typing import Dict, Any, Optional
 from sqlalchemy.orm import Session
 from backend.app.db.session import SessionLocal
 from backend.app.db.models import (
-    TestRun, ExploredPage, TestCase, TestExecution, BugFinding, Artifact, RunEvent, RegressionTest, get_utc_now
+    TestRun, ExploredPage, TestCase, TestExecution, TestStepExecution, BugFinding, Artifact, RunEvent, RegressionTest, get_utc_now
 )
 
 def calc_duration_sec(end_dt, start_dt) -> float:
@@ -129,12 +129,31 @@ class RunController:
                 )
                 db.add(db_page)
 
+            # Capture initial visual snapshot of explored target application
+            try:
+                art_scout, path_scout, fname_scout = await browser_session.capture_screenshot("scout_overview")
+                if art_scout:
+                    db.add(Artifact(
+                        id=art_scout,
+                        run_id=run_id,
+                        type="screenshot",
+                        file_path=path_scout,
+                        file_name=fname_scout,
+                        content_type="image/png"
+                    ))
+            except Exception:
+                art_scout = None
+
             db.commit()
 
             cls.emit_event(
                 db, run_id, "explore", "scout", "PAGES_EXPLORED",
                 f"Discovered {len(inspections)} application page states with {sum(len(i.get('controls', [])) for i in inspections)} interactive controls.",
-                {"pages_count": len(inspections), "discovered_routes": [i["url"] for i in inspections]}
+                {
+                    "pages_count": len(inspections),
+                    "discovered_routes": [i["url"] for i in inspections],
+                    "screenshot_url": f"/api/v1/artifacts/{art_scout}" if art_scout else None
+                }
             )
 
             if cls.is_cancelled(run_id):
@@ -262,11 +281,82 @@ class RunController:
                     f"Executing {tc.id}: {tc.title} (Curiosity Score: {tc.priority_score})"
                 )
 
+                async def handle_live_step(st: Dict[str, Any]):
+                    # Register any screenshot artifacts immediately so they are servable live
+                    for art_key in ["screenshot_before_id", "screenshot_after_id", "screenshot_failure_id", "screenshot_annotated_id"]:
+                        art_id = st.get(art_key)
+                        if art_id:
+                            fname = f"{art_id}.png"
+                            existing_art = db.query(Artifact).filter(Artifact.id == art_id).first()
+                            if not existing_art:
+                                art_type = "screenshot_annotated" if "annotated" in art_id or art_key == "screenshot_annotated_id" else "screenshot"
+                                db.add(Artifact(
+                                    id=art_id,
+                                    run_id=run_id,
+                                    test_id=tc.id,
+                                    type=art_type,
+                                    file_path=os.path.join(settings.ARTIFACTS_DIR, fname),
+                                    file_name=fname,
+                                    content_type="image/png"
+                                ))
+                    
+                    # Persist / Upsert step execution record immediately
+                    existing_step = db.query(TestStepExecution).filter(
+                        TestStepExecution.run_id == run_id,
+                        TestStepExecution.test_case_id == tc.id,
+                        TestStepExecution.step_index == st["step_index"]
+                    ).first()
+                    if not existing_step:
+                        step_exec = TestStepExecution(
+                            id=f"step-exec-{uuid.uuid4().hex[:8]}",
+                            run_id=run_id,
+                            test_case_id=tc.id,
+                            step_index=st["step_index"],
+                            action=st["action"],
+                            description=st["description"],
+                            selector=st.get("selector"),
+                            value=str(st.get("value") or ""),
+                            url_before=st.get("url_before"),
+                            url_after=st.get("url_after"),
+                            duration_sec=st.get("duration_sec", 0.0),
+                            status=st.get("status", "Passed"),
+                            error_message=st.get("error_message"),
+                            screenshot_before_id=st.get("screenshot_before_id"),
+                            screenshot_after_id=st.get("screenshot_after_id"),
+                            screenshot_failure_id=st.get("screenshot_failure_id"),
+                            screenshot_annotated_id=st.get("screenshot_annotated_id"),
+                            assertion_results=st.get("assertion_results", [])
+                        )
+                        db.add(step_exec)
+                    else:
+                        existing_step.status = st.get("status", "Passed")
+                        existing_step.error_message = st.get("error_message")
+                        existing_step.screenshot_failure_id = st.get("screenshot_failure_id")
+                        existing_step.screenshot_annotated_id = st.get("screenshot_annotated_id")
+                        existing_step.assertion_results = st.get("assertion_results", [])
+                    
+                    db.commit()
+
+                    # Emit live step event
+                    live_art = st.get("screenshot_annotated_id") or st.get("screenshot_after_id") or st.get("screenshot_before_id")
+                    cls.emit_event(
+                        db, run_id, "execute", "tester", "STEP_EXECUTED",
+                        f"Step {st['step_index']}: {st['action'].upper()} on {st.get('url_after') or run.target_url}",
+                        {
+                            "step_index": st["step_index"],
+                            "action": st["action"],
+                            "selector": st.get("selector"),
+                            "status": st.get("status"),
+                            "url": st.get("url_after"),
+                            "screenshot_url": f"/api/v1/artifacts/{live_art}" if live_art else None
+                        }
+                    )
+
                 t_start = get_utc_now()
                 exec_result = await executor.execute_test({
                     "steps": tc.steps,
                     "assertions": tc.assertions
-                })
+                }, on_step=handle_live_step)
                 t_end = get_utc_now()
                 duration = calc_duration_sec(t_end, t_start)
                 action_count += len(tc.steps)
@@ -283,20 +373,24 @@ class RunController:
                     duration_sec=duration,
                     assertion_results=exec_result["assertion_results"],
                     screenshot_ids=exec_result["screenshot_ids"],
+                    step_records=exec_result.get("step_records", []),
                     console_logs=exec_result["console_logs"],
                     network_observations=[{"url": exec_result.get("final_url", run.target_url), "status": 200}]
                 )
                 db.add(test_exec)
                 tc.status = exec_result["status"]
+                db.commit()
 
                 # Register Screenshots as Artifacts
                 for art_id in exec_result["screenshot_ids"]:
                     fname = f"{art_id}.png"
+                    # Determine specific artifact sub-type if matching annotated
+                    art_type = "screenshot_annotated" if "annotated" in art_id or art_id == exec_result.get("annotated_screenshot_id") else "screenshot"
                     art_record = Artifact(
                         id=art_id,
                         run_id=run_id,
                         test_id=tc.id,
-                        type="screenshot",
+                        type=art_type,
                         file_path=os.path.join(settings.ARTIFACTS_DIR, fname),
                         file_name=fname,
                         content_type="image/png"
@@ -309,6 +403,25 @@ class RunController:
                         db, run_id, "execute", "tester", "TEST_PASSED",
                         f"PASSED: {tc.id} - {tc.title}"
                     )
+                    # Automatically save verified passing journeys into persistent regression suite
+                    reg_name = f"Regression: {tc.title}"
+                    if not db.query(RegressionTest).filter(RegressionTest.name == reg_name).first():
+                        reg_test = RegressionTest(
+                            id=f"reg-{uuid.uuid4().hex[:8]}",
+                            name=reg_name,
+                            target_url=run.target_url,
+                            original_run_id=run_id,
+                            original_test_id=tc.id,
+                            provenance="passing_journey",
+                            is_approved=True,
+                            structured_steps=tc.steps,
+                            expected_outcomes=tc.expected_results,
+                            assertions=tc.assertions,
+                            last_status="Passed",
+                            executions_count=1
+                        )
+                        db.add(reg_test)
+                        db.commit()
                 elif exec_result["status"] == "Blocked":
                     blocked_cnt += 1
                     cls.emit_event(
@@ -353,11 +466,30 @@ class RunController:
                     else:
                         bug_id = f"BUG-{uuid.uuid4().hex[:6].upper()}"
                         repro_steps_texts = [s.get("description", str(s)) for s in verification.get("minimal_steps", tc.steps)]
+
+                        # Determine failing step details & screenshot evidence
+                        failed_step_rec = None
+                        for s in exec_result.get("step_records", []):
+                            if s.get("status") == "Failed":
+                                failed_step_rec = s
+                                break
+                        if not failed_step_rec and exec_result.get("step_records"):
+                            failed_step_rec = exec_result["step_records"][-1]
+
+                        failed_step_idx = failed_step_rec["step_index"] if failed_step_rec else exec_result.get("failing_step_index")
+                        fail_art_id = exec_result.get("failure_screenshot_id") or (failed_step_rec.get("screenshot_failure_id") if failed_step_rec else None) or (exec_result["screenshot_ids"][-1] if exec_result["screenshot_ids"] else None)
+                        annot_art_id = exec_result.get("annotated_screenshot_id") or (failed_step_rec.get("screenshot_annotated_id") if failed_step_rec else None)
+                        before_art_id = failed_step_rec.get("screenshot_before_id") if failed_step_rec else None
+                        after_art_id = failed_step_rec.get("screenshot_after_id") if failed_step_rec else None
                         
                         finding = BugFinding(
                             id=bug_id,
                             run_id=run_id,
                             test_execution_id=test_exec_id,
+                            failed_step_index=failed_step_idx,
+                            annotated_screenshot_url=f"/api/v1/artifacts/{annot_art_id}" if annot_art_id else None,
+                            screenshot_before_url=f"/api/v1/artifacts/{before_art_id}" if before_art_id else None,
+                            screenshot_after_url=f"/api/v1/artifacts/{after_art_id}" if after_art_id else None,
                             dedup_key=dedup_key,
                             title=f"Defect in {tc.title}",
                             description=f"Deterministic failure detected in {verification.get('category', tc.category)}. {verification['verification_notes']}",
@@ -381,7 +513,7 @@ class RunController:
                             likely_cause_hypothesis=verification.get("likely_cause_hypothesis"),
                             suggested_fix=verification.get("suggested_fix"),
                             alternative_explanations=verification.get("alternative_explanations"),
-                            screenshot_url=f"/api/v1/artifacts/{exec_result['screenshot_ids'][-1]}" if exec_result["screenshot_ids"] else None,
+                            screenshot_url=f"/api/v1/artifacts/{fail_art_id}" if fail_art_id else None,
                             console_errors=exec_result["page_errors"],
                             network_status={"status": 200, "url": exec_result.get("final_url", run.target_url)},
                             replay_attempts=verification["replay_attempts"]

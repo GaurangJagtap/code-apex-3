@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+
+{% block title %}{{ restaurant.name }} — QuickBite Menu{% endblock %}
+
+{% block content %}
+<div style="max-width: 1050px; margin: 1.5rem auto;">
+  <!-- Restaurant Header Banner -->
+  <div style="background: white; border: 1px solid #e2e8f0; border-radius: 16px; padding: 2rem; margin-bottom: 2rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1.5rem; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.03);">
+    <div>
+      <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 0.5rem;">
+        <span style="font-size: 2.5rem;">{{ restaurant.emoji or '🍽️' }}</span>
+        <div>
+          <h1 id="restaurant-title" style="color: #1e293b; font-size: 2rem; font-weight: 800; margin: 0;">{{ restaurant.name }}</h1>
+          <p style="color: #64748b; font-size: 0.95rem; margin-top: 2px;">{{ restaurant.cuisine }} &bull; {{ restaurant.address }}</p>
+        </div>
+      </div>
+    </div>
+    <div style="display: flex; gap: 1.5rem; text-align: right;">
+      <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 0.75rem 1.25rem;">
+        <div style="font-size: 0.75rem; color: #64748b; text-transform: uppercase; font-weight: 700;">Customer Rating</div>
+        <div style="font-size: 1.3rem; font-weight: 800; color: #047857;">★ {{ restaurant.rating }} / 5.0</div>
+      </div>
+      <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 0.75rem 1.25rem;">
+        <div style="font-size: 0.75rem; color: #64748b; text-transform: uppercase; font-weight: 700;">Est. Delivery</div>
+        <div style="font-size: 1.3rem; font-weight: 800; color: #ea580c;">{{ restaurant.delivery_time }} mins</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Menu Layout -->
+  <div style="display: grid; grid-template-columns: 2.8fr 1.2fr; gap: 2rem; align-items: start;">
+    <!-- Items List -->
+    <div>
+      {% for category in categories %}
+      <div style="margin-bottom: 2rem;">
+        <h2 style="font-size: 1.25rem; color: #1e293b; font-weight: 700; border-bottom: 2px solid #f1f5f9; padding-bottom: 0.5rem; margin-bottom: 1rem;">
+          {{ category }}
+        </h2>
+        <div style="display: flex; flex-direction: column; gap: 1rem;">
+          {% for item in menu_items if item.category == category %}
+          <div id="item-card-{{ item.id }}" class="assess-card" style="display: flex; justify-content: space-between; align-items: center; padding: 1.25rem;">
+            <div style="flex: 1; padding-right: 1.5rem;">
+              <h3 id="item-title-{{ item.id }}" style="font-size: 1.05rem; font-weight: 700; color: #1e293b; margin-bottom: 4px;">{{ item.name }}</h3>
+              <p style="font-size: 0.85rem; color: #64748b; margin-bottom: 0.5rem; line-height: 1.4;">{{ item.description }}</p>
+              <div style="font-weight: 800; color: #ea580c; font-size: 1.1rem; font-family: monospace;">
+                ${{ "%.2f"|format(item.price) }}
+              </div>
+            </div>
+            <form action="/quickbite/cart/add" method="POST" style="text-align: right;">
+              <input type="hidden" name="restaurant_id" value="{{ restaurant.id }}">
+              <input type="hidden" name="item_id" value="{{ item.id }}">
+              <input type="hidden" name="item_name" value="{{ item.name }}">
+              <input type="hidden" name="price" value="{{ item.price }}">
+              <input type="hidden" name="quantity" value="1">
+              <button type="submit" id="btn-add-{{ item.id }}" class="btn" style="background: #ea580c; color: white; border: none; padding: 0.6rem 1.25rem; border-radius: 8px; font-weight: 700; font-size: 0.9rem; cursor: pointer; white-space: nowrap;">
+                + Add to Cart
+              </button>
+            </form>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+
+    <!-- Sticky Mini Cart Sidebar -->
+    <div class="assess-card" style="position: sticky; top: 90px; border-top: 4px solid #ea580c;">
+      <h3 style="font-size: 1.1rem; color: #1e293b; font-weight: 700; margin-bottom: 0.75rem; display: flex; justify-content: space-between; align-items: center;">
+        <span>Your QuickBite Cart</span>
+        <span class="qb-badge" id="mini-cart-count">{{ cart_items | length }}</span>
+      </h3>
+      {% if cart_items %}
+      <div style="divide-y divide-slate-100; margin-bottom: 1rem;">
+        {% for ci in cart_items %}
+        <div style="display: flex; justify-content: space-between; padding: 0.6rem 0; font-size: 0.9rem; border-bottom: 1px solid #f1f5f9;">
+          <div>
+            <div style="font-weight: 600; color: #1e293b;">{{ ci.name }}</div>
+            <div style="font-size: 0.75rem; color: #64748b;">Qty: {{ ci.quantity }} &times; ${{ "%.2f"|format(ci.price) }}</div>
+          </div>
+          <div style="font-weight: 700; font-family: monospace; color: #334155;">
+            ${{ "%.2f"|format(ci.price * ci.quantity) }}
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      <div style="border-top: 2px solid #f1f5f9; padding-top: 0.75rem; margin-bottom: 1rem;">
+        <div style="display: flex; justify-content: space-between; font-weight: 800; font-size: 1.15rem; color: #1e293b;">
+          <span>Subtotal:</span>
+          <span id="mini-cart-subtotal" style="font-family: monospace; color: #ea580c;">${{ "%.2f"|format(subtotal) }}</span>
+        </div>
+      </div>
+      <a href="/quickbite/cart" id="btn-view-full-cart" class="btn" style="display: block; width: 100%; text-align: center; background: #ea580c; color: white; padding: 0.75rem; border-radius: 8px; font-weight: 700; text-decoration: none;">
+        Proceed to Cart &rarr;
+      </a>
+      {% else %}
+      <div style="text-align: center; padding: 1.5rem 0; color: #94a3b8; font-size: 0.85rem;">
+        Your cart is empty. Add delicious items from the menu!
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -133,19 +133,92 @@ ASSESSMENT_JOURNEYS: List[Dict[str, Any]] = [
     {"journey_id": "JRN-A07", "name": "Recruiter Evaluation Dashboard Access Control", "path": "/assessment/recruiter/results"}
 ]
 
+# 3. QuickBite Food Delivery Benchmark Ground Truth
+QUICKBITE_GROUND_TRUTH: List[Dict[str, Any]] = [
+    {
+        "defect_id": "QB-BUG-01",
+        "category": "Business logic and calculations",
+        "title": "Cart Subtotal Calculation Failure on Quantity Update",
+        "affected_path": "/quickbite/cart",
+        "expected_behavior": "Cart subtotal and grand total must dynamically recalculate (unit price * quantity + fees) when item quantity changes.",
+        "actual_behavior": "Subtotal and order total remain frozen at 1-item price ($14.99) after quantity increment to 2.",
+        "criticality": "High",
+        "matching_keywords": ["subtotal", "cart", "quantity", "recalculate", "$29.98", "qb-bug-01"]
+    },
+    {
+        "defect_id": "QB-BUG-02",
+        "category": "Form validation and input boundaries",
+        "title": "Missing Validation on Required Postal/ZIP Code in Delivery Address",
+        "affected_path": "/quickbite/checkout/address",
+        "expected_behavior": "Delivery address form must require valid 5-digit postal code and block checkout progression.",
+        "actual_behavior": "Accepts 1-character malformed postal code '1' and proceeds to payment with incomplete dispatch address.",
+        "criticality": "High",
+        "matching_keywords": ["postal", "zip", "address", "validation", "malformed", "qb-bug-02"]
+    },
+    {
+        "defect_id": "QB-BUG-03",
+        "category": "Transaction and workflow integrity",
+        "title": "Non-Idempotent Duplicate Order Creation on Rapid Submit",
+        "affected_path": "/quickbite/checkout/payment",
+        "expected_behavior": "Submit payment button must disable immediately upon click and server must enforce idempotency.",
+        "actual_behavior": "Submit button remains active during processing, allowing rapid double click to create duplicate orders.",
+        "criticality": "High",
+        "matching_keywords": ["idempotency", "duplicate", "payment", "double click", "throttle", "qb-bug-03"]
+    },
+    {
+        "defect_id": "QB-BUG-04",
+        "category": "Transaction and workflow integrity",
+        "title": "Payment Simulator Declined Transaction Falsely Confirmed",
+        "affected_path": "/quickbite/checkout/payment",
+        "expected_behavior": "Declined card payment must halt checkout, display payment failure message, and not confirm order.",
+        "actual_behavior": "Declined payment redirects to confirmation page and marks order falsely confirmed as paid.",
+        "criticality": "Critical",
+        "matching_keywords": ["declined", "payment", "simulator", "confirmation", "falsely", "qb-bug-04"]
+    },
+    {
+        "defect_id": "QB-BUG-05",
+        "category": "Business logic and calculations",
+        "title": "Inconsistent Order Status Between Confirmation Screen and Persisted State",
+        "affected_path": "/quickbite/order",
+        "expected_behavior": "Confirmation screen status must reflect authoritative database order record status.",
+        "actual_behavior": "Confirmation UI claims CONFIRMED order while backend database order status is marked CANCELLED.",
+        "criticality": "High",
+        "matching_keywords": ["confirmation", "discrepancy", "persisted", "authoritative", "inconsistent", "qb-bug-05"]
+    }
+]
+
+QUICKBITE_JOURNEYS: List[Dict[str, Any]] = [
+    {"journey_id": "JRN-QB01", "name": "Restaurant Discovery & Menu Browsing", "path": "/quickbite"},
+    {"journey_id": "JRN-QB02", "name": "Shopping Cart Quantity Recalculation", "path": "/quickbite/cart"},
+    {"journey_id": "JRN-QB03", "name": "Delivery Address Boundary Validation", "path": "/quickbite/checkout/address"},
+    {"journey_id": "JRN-QB04", "name": "Payment Submission Idempotency Enforcement", "path": "/quickbite/checkout/payment"},
+    {"journey_id": "JRN-QB05", "name": "Payment Simulator Decline Integrity", "path": "/quickbite/checkout/payment"},
+    {"journey_id": "JRN-QB06", "name": "Order Tracking & Authoritative Status Verification", "path": "/quickbite/order"}
+]
+
 class BenchmarkService:
     """
     Quality Metrics and Ground-Truth Evaluation Engine.
-    Computes Defect Recall, Precision, Reproducibility Rate, and Journey Coverage
-    dynamically from stored database records for both DevStore and Assessment suites.
+    Computes Defect Recall, Precision, Reproducibility Rate, Screenshot Coverage,
+    Annotated Failure Coverage, and Journey Coverage dynamically from stored database records.
     """
 
     @classmethod
     def get_suite_registry(cls, suite: str = "devstore"):
-        if str(suite).lower() in ("assessment", "assess", "imocha"):
+        suite_lower = str(suite).lower()
+        if suite_lower in ("quickbite", "qb", "food"):
+            return {
+                "suite": "quickbite",
+                "name": "QuickBite Food Delivery Platform Benchmark",
+                "ground_truth": QUICKBITE_GROUND_TRUTH,
+                "benchmark_journeys": QUICKBITE_JOURNEYS,
+                "total_planted": len(QUICKBITE_GROUND_TRUTH),
+                "total_journeys": len(QUICKBITE_JOURNEYS)
+            }
+        elif suite_lower in ("assessment", "assess", "assesspro", "imocha"):
             return {
                 "suite": "assessment",
-                "name": "iMocha-Style Hiring & Assessment Benchmark",
+                "name": "AssessPro Hiring & Assessment Benchmark",
                 "ground_truth": ASSESSMENT_GROUND_TRUTH,
                 "benchmark_journeys": ASSESSMENT_JOURNEYS,
                 "total_planted": len(ASSESSMENT_GROUND_TRUTH),
@@ -178,7 +251,9 @@ class BenchmarkService:
         if not suite:
             target_lower = (run.target_url or "").lower()
             desc_lower = (run.description or "").lower()
-            if "/assessment" in target_lower or "assessment" in desc_lower or "imocha" in desc_lower:
+            if "/quickbite" in target_lower or "quickbite" in desc_lower or "food" in desc_lower:
+                suite = "quickbite"
+            elif "/assesspro" in target_lower or "/assessment" in target_lower or "assessment" in desc_lower or "imocha" in desc_lower:
                 suite = "assessment"
             else:
                 suite = "devstore"
@@ -266,6 +341,26 @@ class BenchmarkService:
 
         journey_coverage = round(len(tested_paths) / len(benchmark_journeys_list), 4)
 
+        # 5. USP 2: Step-by-Step Screenshot Coverage & Annotated Failure Coverage
+        from backend.app.db.models import TestStepExecution
+        step_execs = db.query(TestStepExecution).filter(TestStepExecution.run_id == run_id).all()
+        total_executed_steps = len(step_execs)
+        steps_with_screenshot = sum(
+            1 for s in step_execs if s.screenshot_after_id or s.screenshot_before_id
+        )
+        screenshot_coverage = round(steps_with_screenshot / total_executed_steps, 4) if total_executed_steps > 0 else (1.0 if findings else 0.0)
+
+        failed_steps = [s for s in step_execs if s.status == "Failed"]
+        total_failed_steps = len(failed_steps)
+        failed_with_annotated = sum(
+            1 for s in failed_steps if s.screenshot_annotated_id
+        )
+        if total_failed_steps == 0 and findings:
+            total_failed_steps = len(findings)
+            failed_with_annotated = sum(1 for f in findings if getattr(f, "annotated_screenshot_url", None))
+
+        annotated_failure_coverage = round(failed_with_annotated / total_failed_steps, 4) if total_failed_steps > 0 else (1.0 if not findings else 0.0)
+
         return {
             "run_id": run.id,
             "suite": registry["suite"],
@@ -281,6 +376,14 @@ class BenchmarkService:
                 "reproducibility_percent": f"{reproducibility_rate * 100:.1f}%",
                 "journey_coverage": journey_coverage,
                 "journey_coverage_percent": f"{journey_coverage * 100:.1f}%",
+                "screenshot_coverage": screenshot_coverage,
+                "screenshot_coverage_percent": f"{screenshot_coverage * 100:.1f}%",
+                "annotated_failure_coverage": annotated_failure_coverage,
+                "annotated_failure_coverage_percent": f"{annotated_failure_coverage * 100:.1f}%",
+                "total_executed_steps": total_executed_steps,
+                "steps_with_screenshot": steps_with_screenshot,
+                "total_failed_steps": total_failed_steps,
+                "failed_with_annotated": failed_with_annotated,
                 "true_positives": true_positives,
                 "false_positives": false_positives,
                 "total_planted_defects": total_planted,

@@ -107,11 +107,39 @@ class TestExecution(Base):
     retry_count = Column(Integer, default=0)
     assertion_results = Column(JSON, default=list)
     screenshot_ids = Column(JSON, default=list)
+    step_records = Column(JSON, default=list) # Chronological step execution evidence records
     console_logs = Column(JSON, default=list)
     network_observations = Column(JSON, default=list)
 
     test_case = relationship("TestCase", back_populates="executions")
     finding = relationship("BugFinding", back_populates="execution", uselist=False)
+
+class TestStepExecution(Base):
+    __test__ = False
+    __tablename__ = "test_step_executions"
+
+    id = Column(String(50), primary_key=True, index=True)
+    run_id = Column(String(50), ForeignKey("test_runs.id"), nullable=False, index=True)
+    test_case_id = Column(String(50), ForeignKey("test_cases.id"), nullable=False, index=True)
+    step_index = Column(Integer, nullable=False)
+    action = Column(String(50), nullable=False)
+    description = Column(String(300), nullable=False)
+    selector = Column(String(300), nullable=True)
+    value = Column(String(500), nullable=True)
+    url_before = Column(String(500), nullable=True)
+    url_after = Column(String(500), nullable=True)
+    duration_sec = Column(Float, default=0.0)
+    status = Column(String(50), default="Passed") # Passed, Failed, Blocked, Skipped
+    error_message = Column(Text, nullable=True)
+    
+    # Artifact IDs
+    screenshot_before_id = Column(String(50), nullable=True)
+    screenshot_after_id = Column(String(50), nullable=True)
+    screenshot_failure_id = Column(String(50), nullable=True)
+    screenshot_annotated_id = Column(String(50), nullable=True)
+    
+    assertion_results = Column(JSON, default=list)
+    created_at = Column(DateTime, default=get_utc_now)
 
 class BugFinding(Base):
     __tablename__ = "bug_findings"
@@ -119,6 +147,10 @@ class BugFinding(Base):
     id = Column(String(50), primary_key=True, index=True)
     run_id = Column(String(50), ForeignKey("test_runs.id"), nullable=False, index=True)
     test_execution_id = Column(String(50), ForeignKey("test_executions.id"), nullable=True, index=True)
+    failed_step_index = Column(Integer, nullable=True)
+    annotated_screenshot_url = Column(String(500), nullable=True)
+    screenshot_before_url = Column(String(500), nullable=True)
+    screenshot_after_url = Column(String(500), nullable=True)
     dedup_key = Column(String(100), nullable=True, index=True)
     title = Column(String(300), nullable=False)
     description = Column(Text, nullable=False)

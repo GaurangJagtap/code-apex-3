@@ -1,0 +1,178 @@
+{% extends "base.html" %}
+
+{% block title %}Examination — AssessPro Candidate Assessment{% endblock %}
+
+{% block content %}
+<div style="max-width: 1050px; margin: 1rem auto;">
+  <!-- Examination Header Bar -->
+  <div style="background: white; border: 1px solid #e2e8f0; border-radius: 10px; padding: 1rem 1.5rem; display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.05); flex-wrap: wrap; gap: 1rem;">
+    <div>
+      <h2 id="assessment-exam-title" style="font-size: 1.3rem; color: #1e1b4b; margin: 0;">Senior Software Engineer Evaluation</h2>
+      <p style="font-size: 0.85rem; color: #64748b; margin: 2px 0 0;">Candidate: <strong>{{ candidate.name }}</strong> ({{ candidate.email }})</p>
+    </div>
+    <div style="display: flex; align-items: center; gap: 1rem;">
+      <div id="exam-timer" class="timer-badge">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        <span id="timer-display">24:45</span>
+      </div>
+      <a href="/assesspro/assessment/test?refresh=1" id="btn-sim-refresh" style="font-size: 0.75rem; text-decoration: none; background: #f1f5f9; border: 1px solid #cbd5e1; padding: 6px 10px; border-radius: 6px; color: #475569;" title="Simulates a browser refresh or network interruption to test state recovery">
+        &#x21bb; Reload Test State
+      </a>
+    </div>
+  </div>
+
+  <form id="assessment-exam-form" action="/assesspro/submit" method="POST">
+    <input type="hidden" name="candidate_name" value="{{ candidate.name }}">
+    <input type="hidden" name="candidate_email" value="{{ candidate.email }}">
+
+    <div style="display: grid; grid-template-columns: 2.8fr 1fr; gap: 1.5rem; align-items: start;">
+      <!-- Main Question Display -->
+      <div class="assess-card">
+        <!-- Question 1 -->
+        <div id="question-card-1" class="question-block" style="display: block;">
+          <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #f1f5f9; padding-bottom: 0.75rem; margin-bottom: 1rem;">
+            <span style="font-weight: 700; color: #4338ca; font-size: 0.95rem;">Question 1 of 4 &bull; Architecture & Latency</span>
+            <span style="font-size: 0.8rem; background: #e0e7ff; color: #3730a3; padding: 2px 8px; border-radius: 4px;">Single Choice</span>
+          </div>
+          <p style="font-weight: 600; font-size: 1.05rem; color: #1e293b; margin-bottom: 1.25rem;">
+            Which caching pattern best minimizes tail latency for high-throughput read-heavy APIs while avoiding the thundering herd problem?
+          </p>
+          <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+            <label style="display: flex; align-items: center; gap: 10px; padding: 0.85rem; border: 1px solid #cbd5e1; border-radius: 8px; cursor: pointer;">
+              <input type="radio" id="option-q1-a" name="q1" value="A" {% if answers.get('q1') == 'A' %}checked{% endif %} onchange="updatePalette(1, 'answered')">
+              <span><strong>A.</strong> Cache-Aside with fixed TTL and direct fallback to relational database queries</span>
+            </label>
+            <label style="display: flex; align-items: center; gap: 10px; padding: 0.85rem; border: 1px solid #cbd5e1; border-radius: 8px; cursor: pointer;">
+              <input type="radio" id="option-q1-b" name="q1" value="B" {% if answers.get('q1') == 'B' %}checked{% endif %} onchange="updatePalette(1, 'answered')">
+              <span><strong>B.</strong> Read-Through with probabilistic early expiration (XFetch) and single-flight lock</span>
+            </label>
+            <label style="display: flex; align-items: center; gap: 10px; padding: 0.85rem; border: 1px solid #cbd5e1; border-radius: 8px; cursor: pointer;">
+              <input type="radio" id="option-q1-c" name="q1" value="C" {% if answers.get('q1') == 'C' %}checked{% endif %} onchange="updatePalette(1, 'answered')">
+              <span><strong>C.</strong> Write-Around caching with eventual batch queue invalidation</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Question 2 -->
+        <div id="question-card-2" class="question-block" style="display: block; margin-top: 2rem; border-top: 2px dashed #e2e8f0; padding-top: 1.5rem;">
+          <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #f1f5f9; padding-bottom: 0.75rem; margin-bottom: 1rem;">
+            <span style="font-weight: 700; color: #4338ca; font-size: 0.95rem;">Question 2 of 4 &bull; Database Transactions</span>
+            <span style="font-size: 0.8rem; background: #e0e7ff; color: #3730a3; padding: 2px 8px; border-radius: 4px;">Single Choice</span>
+          </div>
+          <p style="font-weight: 600; font-size: 1.05rem; color: #1e293b; margin-bottom: 1.25rem;">
+            Under the Repeatable Read isolation level in PostgreSQL, what anomaly is prevented by default?
+          </p>
+          <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+            <label style="display: flex; align-items: center; gap: 10px; padding: 0.85rem; border: 1px solid #cbd5e1; border-radius: 8px; cursor: pointer;">
+              <input type="radio" id="option-q2-a" name="q2" value="A" {% if answers.get('q2') == 'A' %}checked{% endif %} onchange="updatePalette(2, 'answered')">
+              <span><strong>A.</strong> Non-repeatable reads and dirty reads</span>
+            </label>
+            <label style="display: flex; align-items: center; gap: 10px; padding: 0.85rem; border: 1px solid #cbd5e1; border-radius: 8px; cursor: pointer;">
+              <input type="radio" id="option-q2-b" name="q2" value="B" {% if answers.get('q2') == 'B' %}checked{% endif %} onchange="updatePalette(2, 'answered')">
+              <span><strong>B.</strong> Serialization write-skew anomalies</span>
+            </label>
+            <label style="display: flex; align-items: center; gap: 10px; padding: 0.85rem; border: 1px solid #cbd5e1; border-radius: 8px; cursor: pointer;">
+              <input type="radio" id="option-q2-c" name="q2" value="C" {% if answers.get('q2') == 'C' %}checked{% endif %} onchange="updatePalette(2, 'answered')">
+              <span><strong>C.</strong> Distributed deadlock in two-phase commit</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Question 3 -->
+        <div id="question-card-3" class="question-block" style="display: block; margin-top: 2rem; border-top: 2px dashed #e2e8f0; padding-top: 1.5rem;">
+          <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #f1f5f9; padding-bottom: 0.75rem; margin-bottom: 1rem;">
+            <span style="font-weight: 700; color: #4338ca; font-size: 0.95rem;">Question 3 of 4 &bull; Distributed Idempotency</span>
+            <span style="font-size: 0.8rem; background: #e0e7ff; color: #3730a3; padding: 2px 8px; border-radius: 4px;">Single Choice</span>
+          </div>
+          <p style="font-weight: 600; font-size: 1.05rem; color: #1e293b; margin-bottom: 1.25rem;">
+            How should a payments and ordering service enforce idempotency across network retries?
+          </p>
+          <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+            <label style="display: flex; align-items: center; gap: 10px; padding: 0.85rem; border: 1px solid #cbd5e1; border-radius: 8px; cursor: pointer;">
+              <input type="radio" id="option-q3-a" name="q3" value="A" {% if answers.get('q3') == 'A' %}checked{% endif %} onchange="updatePalette(3, 'answered')">
+              <span><strong>A.</strong> Client provides a unique Idempotency-Key stored with an atomic unique constraint in the datastore</span>
+            </label>
+            <label style="display: flex; align-items: center; gap: 10px; padding: 0.85rem; border: 1px solid #cbd5e1; border-radius: 8px; cursor: pointer;">
+              <input type="radio" id="option-q3-b" name="q3" value="B" {% if answers.get('q3') == 'B' %}checked{% endif %} onchange="updatePalette(3, 'answered')">
+              <span><strong>B.</strong> Sleep 200ms on the client and retry without payload signatures</span>
+            </label>
+            <label style="display: flex; align-items: center; gap: 10px; padding: 0.85rem; border: 1px solid #cbd5e1; border-radius: 8px; cursor: pointer;">
+              <input type="radio" id="option-q3-c" name="q3" value="C" {% if answers.get('q3') == 'C' %}checked{% endif %} onchange="updatePalette(3, 'answered')">
+              <span><strong>C.</strong> Cache the first request in memory without persistent transaction logs</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Question 4: Architectural Short Answer -->
+        <div id="question-card-4" class="question-block" style="display: block; margin-top: 2rem; border-top: 2px dashed #e2e8f0; padding-top: 1.5rem;">
+          <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #f1f5f9; padding-bottom: 0.75rem; margin-bottom: 1rem;">
+            <span style="font-weight: 700; color: #4338ca; font-size: 0.95rem;">Question 4 of 4 &bull; Code / Architectural Implementation</span>
+            <span style="font-size: 0.8rem; background: #e0e7ff; color: #3730a3; padding: 2px 8px; border-radius: 4px;">Code / Text Response</span>
+          </div>
+          <p style="font-weight: 600; font-size: 1.05rem; color: #1e293b; margin-bottom: 0.5rem;">
+            Briefly explain how you would design an autonomous QA agent to detect regression bugs in a microservices checkout journey.
+          </p>
+          <textarea id="text-q4" name="q4" rows="4" style="width: 100%; padding: 0.75rem; border: 1px solid #cbd5e1; border-radius: 6px; font-family: monospace; font-size: 0.9rem;" placeholder="Explain multi-hop graph exploration and state invariant assertion checks..." oninput="updatePalette(4, 'answered')">{{ answers.get('q4', '') }}</textarea>
+        </div>
+
+        <!-- Submission Action Buttons -->
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid #e2e8f0;">
+          <button type="button" id="btn-mark-review" onclick="toggleMarkReview()" style="background: #fffbeb; border: 1px solid #f59e0b; color: #92400e; padding: 0.6rem 1.25rem; border-radius: 6px; font-weight: 600; cursor: pointer;">
+            Mark for Review
+          </button>
+          <button type="submit" id="btn-submit-assessment" class="btn" style="background: #4f46e5; color: white; padding: 0.75rem 2rem; border: none; border-radius: 6px; font-weight: 700; font-size: 1.05rem; cursor: pointer; display: flex; align-items: center; gap: 8px;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+            Submit Final Assessment
+          </button>
+        </div>
+      </div>
+
+      <!-- Question Navigation Palette Sidebar -->
+      <div class="assess-card" style="position: sticky; top: 80px;">
+        <h4 style="color: #1e1b4b; font-size: 1rem; margin-bottom: 0.5rem;">Question Palette</h4>
+        <p style="font-size: 0.8rem; color: #64748b; margin-bottom: 1rem;">Click to review question status</p>
+        
+        <div class="assess-palette">
+          <div id="palette-q1" class="palette-btn {% if answers.get('q1') %}answered{% endif %}">Q1</div>
+          <div id="palette-q2" class="palette-btn {% if answers.get('q2') %}answered{% endif %}">Q2</div>
+          <div id="palette-q3" class="palette-btn {% if answers.get('q3') %}answered{% endif %}">Q3</div>
+          <div id="palette-q4" class="palette-btn {% if answers.get('q4') %}answered{% endif %}">Q4</div>
+        </div>
+
+        <div style="margin-top: 1.5rem; font-size: 0.75rem; border-top: 1px solid #f1f5f9; padding-top: 1rem; color: #64748b; space-y: 6px;">
+          <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+            <span style="width: 12px; height: 12px; background: #ecfdf5; border: 1px solid #10b981; border-radius: 3px; display: inline-block;"></span>
+            <span>Answered</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+            <span style="width: 12px; height: 12px; background: #fffbeb; border: 1px solid #f59e0b; border-radius: 3px; display: inline-block;"></span>
+            <span>Marked for Review</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="width: 12px; height: 12px; background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 3px; display: inline-block;"></span>
+            <span>Unanswered</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </form>
+</div>
+
+<script>
+function updatePalette(qNum, status) {
+  const p = document.getElementById('palette-q' + qNum);
+  if (p) {
+    p.classList.remove('answered', 'marked');
+    if (status === 'answered') p.classList.add('answered');
+    else if (status === 'marked') p.classList.add('marked');
+  }
+}
+
+function toggleMarkReview() {
+  const p = document.getElementById('palette-q1');
+  if (p) {
+    p.classList.toggle('marked');
+  }
+}
+</script>
+{% endblock %}

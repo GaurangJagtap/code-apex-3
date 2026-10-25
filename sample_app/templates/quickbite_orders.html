@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+
+{% block title %}My Food Orders — QuickBite{% endblock %}
+
+{% block content %}
+<div style="max-width: 900px; margin: 1.5rem auto;">
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+    <div>
+      <h1 id="qb-orders-title" style="font-size: 1.85rem; color: #1e293b; font-weight: 800; margin: 0;">Order History</h1>
+      <p style="color: #64748b; font-size: 0.9rem; margin-top: 2px;">Track past deliveries and reorder your favorite meals.</p>
+    </div>
+    <a href="/quickbite" class="btn" style="background: #ea580c; color: white; padding: 0.6rem 1.25rem; border-radius: 8px; text-decoration: none; font-weight: 700; font-size: 0.9rem;">
+      + Order More Food
+    </a>
+  </div>
+
+  {% if orders %}
+  <div style="display: flex; flex-direction: column; gap: 1rem;">
+    {% for ord in orders %}
+    <div class="assess-card" style="padding: 1.25rem 1.5rem;">
+      <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #f1f5f9; padding-bottom: 0.75rem; margin-bottom: 0.75rem;">
+        <div>
+          <span style="font-weight: 800; color: #1e293b; font-size: 1.05rem;">Order {{ ord.id }}</span>
+          <span style="color: #64748b; font-size: 0.8rem; margin-left: 8px;">&bull; Placed at {{ ord.created_at }}</span>
+        </div>
+        <span style="font-size: 0.8rem; font-weight: 700; background: {% if ord.status == 'Confirmed' or ord.status == 'Delivered' %}#ecfdf5; color: #065f46; border: 1px solid #a7f3d0;{% else %}#fef2f2; color: #991b1b; border: 1px solid #fecaca;{% endif %} padding: 3px 10px; border-radius: 9999px;">
+          {{ ord.status }}
+        </span>
+      </div>
+
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <div style="font-size: 0.85rem; color: #475569;">
+          <div><strong>Items:</strong> {{ ord.items | length }} items from {{ ord.restaurant_name or 'QuickBite Partner' }}</div>
+          <div style="color: #64748b; font-size: 0.8rem;">Delivering to: {{ ord.address.street_address if ord.address else 'Default Address' }}</div>
+        </div>
+        <div style="text-align: right;">
+          <div style="font-size: 1.2rem; font-weight: 800; font-family: monospace; color: #ea580c;">
+            ${{ "%.2f"|format(ord.total) }}
+          </div>
+          <a href="/quickbite/order/{{ ord.id }}/confirmation" style="font-size: 0.8rem; color: #ea580c; text-decoration: none; font-weight: 600;">
+            View Tracking & Receipt &rarr;
+          </a>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="assess-card" style="text-align: center; padding: 4rem 2rem;">
+    <div style="font-size: 3rem; margin-bottom: 1rem;">📦</div>
+    <h3 style="color: #1e293b; font-size: 1.25rem; font-weight: 700; margin-bottom: 0.5rem;">No Orders Placed Yet</h3>
+    <p style="color: #64748b; font-size: 0.9rem; margin-bottom: 1.5rem;">You haven't placed any food orders yet. Hungry?</p>
+    <a href="/quickbite" class="btn" style="background: #ea580c; color: white; padding: 0.75rem 1.75rem; border-radius: 8px; text-decoration: none; font-weight: 700;">
+      Explore Restaurants
+    </a>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

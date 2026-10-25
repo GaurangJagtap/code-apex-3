@@ -19,9 +19,11 @@ import {
   Activity,
   HelpCircle,
   BookmarkPlus,
-  RefreshCw
+  RefreshCw,
+  ZoomIn
 } from 'lucide-react';
 import { fetchBug, fetchBugs, BugFinding } from '../api/client';
+import { getSimpleBugExplanation } from '../utils/bugExplainer';
 
 export const BugDetail: React.FC = () => {
   const { bugId } = useParams<{ bugId: string }>();
@@ -29,6 +31,7 @@ export const BugDetail: React.FC = () => {
   const [availableBugs, setAvailableBugs] = useState<BugFinding[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [zoomedImage, setZoomedImage] = useState<{ url: string; title: string } | null>(null);
 
   useEffect(() => {
     if (!bugId) return;
@@ -307,6 +310,82 @@ export const BugDetail: React.FC = () => {
 
         {/* Content Body */}
         <div className="p-6 md:p-8 space-y-8 text-xs text-[hsl(var(--foreground))]">
+          {/* Executive Defect Summary */}
+          {(() => {
+            const explanation = getSimpleBugExplanation(bug);
+            return (
+              <div className="p-5 md:p-6 rounded-2xl border border-slate-200 bg-slate-50/80 shadow-xs space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-200 pb-3">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-9 h-9 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 flex items-center justify-center shrink-0">
+                      <Sparkles className="w-5 h-5 text-emerald-600" />
+                    </div>
+                    <div>
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-700 block">
+                        Executive Defect Summary
+                      </span>
+                      <h2 className="text-base md:text-lg font-bold text-slate-900 tracking-tight">
+                        {explanation.headline}
+                      </h2>
+                    </div>
+                  </div>
+                  <div className="flex flex-wrap gap-1.5 self-start sm:self-auto">
+                    {explanation.tags.map((t, idx) => (
+                      <span
+                        key={idx}
+                        className="text-[10px] font-semibold bg-slate-200/80 text-slate-800 px-2 py-0.5 rounded-full border border-slate-300"
+                      >
+                        {t}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Core Issue Callout */}
+                <div className="p-4 bg-white rounded-xl border border-slate-200 shadow-2xs space-y-1">
+                  <div className="text-[11px] font-bold text-slate-900 uppercase tracking-wide flex items-center gap-1.5">
+                    <span>Defect Overview:</span>
+                  </div>
+                  <p className="text-xs md:text-sm font-medium text-slate-800 leading-relaxed font-sans">
+                    {explanation.inSimpleWords}
+                  </p>
+                </div>
+
+                {/* What Was Supposed to Happen vs What Actually Happened */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                  <div className="p-3.5 bg-emerald-50/80 rounded-xl border border-emerald-200 space-y-1.5">
+                    <div className="text-[11px] font-bold text-emerald-800 flex items-center gap-1.5">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                      <span>What Was Supposed to Happen (Expected):</span>
+                    </div>
+                    <p className="text-xs text-emerald-950 font-sans leading-relaxed">
+                      {explanation.whatWasExpected}
+                    </p>
+                  </div>
+
+                  <div className="p-3.5 bg-rose-50/80 rounded-xl border border-rose-200 space-y-1.5">
+                    <div className="text-[11px] font-bold text-rose-800 flex items-center gap-1.5">
+                      <XCircle className="w-4 h-4 text-rose-600 shrink-0" />
+                      <span>What Actually Happened (The Defect):</span>
+                    </div>
+                    <p className="text-xs text-rose-950 font-sans leading-relaxed">
+                      {explanation.whatActuallyHappened}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Real-World Impact */}
+                <div className="p-3 bg-slate-100/80 rounded-xl border border-slate-200 flex items-start gap-2.5 text-xs text-slate-700">
+                  <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                  <div className="leading-relaxed">
+                    <strong className="text-slate-900 mr-1.5">Why This Matters:</strong>
+                    <span>{explanation.whyItMatters}</span>
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
+
           {/* Trust & Evidence Score Breakdown */}
           <div className="p-5 rounded-xl border border-[hsl(var(--border))] bg-white shadow-xs space-y-4">
             <div className="flex items-center justify-between">
@@ -521,22 +600,190 @@ export const BugDetail: React.FC = () => {
             </div>
           )}
 
-          {/* Evidence Screenshot */}
-          {bug.screenshot_url && (
-            <div className="space-y-2">
-              <h4 className="text-xs font-bold text-[hsl(var(--muted-foreground))] uppercase tracking-wider flex items-center gap-1.5">
-                <Camera className="w-3.5 h-3.5 text-[hsl(var(--accent))]" />
-                Captured Evidence Screenshot
-              </h4>
-              <div className="border border-[hsl(var(--border))] rounded-xl overflow-hidden shadow-xs bg-slate-900">
-                <img
-                  src={bug.screenshot_url}
-                  alt="Defect screenshot"
-                  className="w-full max-h-[500px] object-contain"
-                />
+          {/* Complete Step-by-Step Screenshot Evidence Suite (USP 2) */}
+          <div className="space-y-4 pt-2">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[hsl(var(--border))] pb-2.5">
+              <div>
+                <h4 className="text-sm font-bold text-[hsl(var(--foreground))] uppercase tracking-wider flex items-center gap-2">
+                  <Camera className="w-4 h-4 text-rose-600" />
+                  <span>3-Step Visual Proof Journey: Before &bull; The Bug &bull; After</span>
+                </h4>
+                <p className="text-[11px] text-[hsl(var(--muted-foreground))] mt-0.5">
+                  Complete Playwright-recorded photographic evidence capturing the page immediately before, during, and after the failing action.
+                </p>
+              </div>
+              {bug.failed_step_index !== undefined && bug.failed_step_index !== null && (
+                <span className="text-xs font-bold bg-rose-100 text-rose-800 border border-rose-300 px-3 py-1 rounded-full shrink-0">
+                  Failing Action: Step #{bug.failed_step_index + 1}
+                </span>
+              )}
+            </div>
+
+            {/* 3-Column Comparative Visual Evidence */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {/* Step 1: BEFORE THE BUG */}
+              <div className="border border-emerald-200 rounded-xl p-3.5 bg-emerald-50/40 flex flex-col justify-between space-y-2 shadow-2xs">
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-bold uppercase tracking-wider bg-emerald-100 text-emerald-800 border border-emerald-300 px-2 py-0.5 rounded">
+                      1. BEFORE THE BUG
+                    </span>
+                    <span className="text-[10px] font-semibold text-emerald-700">Pre-Action State</span>
+                  </div>
+                  <div className="text-xs font-bold text-emerald-950">
+                    How the page looked before clicking/submitting
+                  </div>
+                </div>
+
+                <div className="relative group rounded-lg overflow-hidden border border-emerald-200 bg-white aspect-4/3 flex items-center justify-center">
+                  {bug.screenshot_before_url ? (
+                    <>
+                      <img
+                        src={bug.screenshot_before_url}
+                        alt="Pre-Action Screenshot"
+                        className="w-full h-full object-contain cursor-pointer transition group-hover:scale-102"
+                        onClick={() =>
+                          setZoomedImage({
+                            url: bug.screenshot_before_url!,
+                            title: 'Step 1: Pre-Action Screenshot (Before the Bug)'
+                          })
+                        }
+                      />
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setZoomedImage({
+                            url: bug.screenshot_before_url!,
+                            title: 'Step 1: Pre-Action Screenshot (Before the Bug)'
+                          })
+                        }
+                        className="absolute bottom-2 right-2 bg-black/70 hover:bg-black text-white p-1.5 rounded-md text-[10px] flex items-center gap-1 opacity-90 group-hover:opacity-100 transition shadow-sm"
+                      >
+                        <ZoomIn className="w-3 h-3" />
+                        <span>Zoom</span>
+                      </button>
+                    </>
+                  ) : (
+                    <div className="p-4 text-center text-[11px] text-slate-400">
+                      Pre-action screenshot recorded in test execution timeline.
+                    </div>
+                  )}
+                </div>
+
+                <div className="text-[10px] text-emerald-800 leading-tight">
+                  Initial valid page state prior to triggering the failing invariant.
+                </div>
+              </div>
+
+              {/* Step 2: THE BUG (VISUAL DEFECT HIGHLIGHT) */}
+              <div className="border-2 border-rose-500 rounded-xl p-3.5 bg-rose-50/50 flex flex-col justify-between space-y-2 shadow-xs">
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-bold uppercase tracking-wider bg-rose-600 text-white px-2 py-0.5 rounded animate-pulse">
+                      2. THE BUG (EXACT REGION)
+                    </span>
+                    <span className="text-[10px] font-bold text-rose-700">Visual Defect Highlight</span>
+                  </div>
+                  <div className="text-xs font-bold text-rose-950">
+                    Exact failing element bounded with red alert outline
+                  </div>
+                </div>
+
+                <div className="relative group rounded-lg overflow-hidden border border-rose-300 bg-slate-900 aspect-4/3 flex items-center justify-center">
+                  {(bug.annotated_screenshot_url || bug.screenshot_url) ? (
+                    <>
+                      <img
+                        src={bug.annotated_screenshot_url || bug.screenshot_url!}
+                        alt="Annotated Defect Screenshot"
+                        className="w-full h-full object-contain cursor-pointer transition group-hover:scale-102"
+                        onClick={() =>
+                          setZoomedImage({
+                            url: bug.annotated_screenshot_url || bug.screenshot_url!,
+                            title: 'Step 2: Exact Failing Defect (Visual Bounding Box)'
+                          })
+                        }
+                      />
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setZoomedImage({
+                            url: bug.annotated_screenshot_url || bug.screenshot_url!,
+                            title: 'Step 2: Exact Failing Defect (Visual Bounding Box)'
+                          })
+                        }
+                        className="absolute bottom-2 right-2 bg-rose-600 hover:bg-rose-700 text-white p-1.5 rounded-md text-[10px] flex items-center gap-1 shadow-sm transition"
+                      >
+                        <ZoomIn className="w-3 h-3" />
+                        <span>Inspect Defect</span>
+                      </button>
+                    </>
+                  ) : (
+                    <div className="p-4 text-center text-[11px] text-slate-400">
+                      Failure screenshot recorded during Playwright replay.
+                    </div>
+                  )}
+                </div>
+
+                <div className="text-[10px] text-rose-800 font-medium leading-tight">
+                  Red bounding box and defect badge pinpoint the exact faulty control.
+                </div>
+              </div>
+
+              {/* Step 3: AFTER THE BUG */}
+              <div className="border border-slate-200 rounded-xl p-3.5 bg-slate-50/70 flex flex-col justify-between space-y-2 shadow-2xs">
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-bold uppercase tracking-wider bg-slate-200 text-slate-800 border border-slate-300 px-2 py-0.5 rounded">
+                      3. AFTER THE BUG
+                    </span>
+                    <span className="text-[10px] font-semibold text-slate-600">Observed Output</span>
+                  </div>
+                  <div className="text-xs font-bold text-slate-900">
+                    What the website displayed as the final result
+                  </div>
+                </div>
+
+                <div className="relative group rounded-lg overflow-hidden border border-slate-200 bg-white aspect-4/3 flex items-center justify-center">
+                  {(bug.screenshot_after_url || bug.screenshot_url) ? (
+                    <>
+                      <img
+                        src={bug.screenshot_after_url || bug.screenshot_url!}
+                        alt="Post-Action Screenshot"
+                        className="w-full h-full object-contain cursor-pointer transition group-hover:scale-102"
+                        onClick={() =>
+                          setZoomedImage({
+                            url: (bug.screenshot_after_url || bug.screenshot_url)!,
+                            title: 'Step 3: Post-Action Screenshot (Observed State)'
+                          })
+                        }
+                      />
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setZoomedImage({
+                            url: (bug.screenshot_after_url || bug.screenshot_url)!,
+                            title: 'Step 3: Post-Action Screenshot (Observed State)'
+                          })
+                        }
+                        className="absolute bottom-2 right-2 bg-black/70 hover:bg-black text-white p-1.5 rounded-md text-[10px] flex items-center gap-1 opacity-90 group-hover:opacity-100 transition shadow-sm"
+                      >
+                        <ZoomIn className="w-3 h-3" />
+                        <span>Zoom</span>
+                      </button>
+                    </>
+                  ) : (
+                    <div className="p-4 text-center text-[11px] text-slate-400">
+                      Post-action screenshot recorded in test execution timeline.
+                    </div>
+                  )}
+                </div>
+
+                <div className="text-[10px] text-slate-600 leading-tight">
+                  Raw unedited evidence confirming the incorrect response or display.
+                </div>
               </div>
             </div>
-          )}
+          </div>
 
           {/* Console Errors */}
           {consoleErrors.length > 0 && (
@@ -552,6 +799,52 @@ export const BugDetail: React.FC = () => {
           )}
         </div>
       </div>
+
+      {/* Full Screen Evidence Zoom Modal */}
+      {zoomedImage && (
+        <div
+          className="fixed inset-0 z-70 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-200"
+          onClick={() => setZoomedImage(null)}
+        >
+          <div
+            className="bg-slate-900 border border-slate-700 text-white rounded-2xl max-w-5xl w-full p-4 flex flex-col shadow-2xl max-h-[92vh] overflow-hidden"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+              <div className="flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-rose-500 animate-pulse" />
+                <span className="font-bold text-sm text-sky-400">{zoomedImage.title}</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setZoomedImage(null)}
+                className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-xs font-semibold transition"
+              >
+                Close ✕
+              </button>
+            </div>
+            <div className="py-4 flex-1 flex items-center justify-center overflow-auto bg-slate-950/60 rounded-xl my-2 border border-slate-800/80">
+              <img
+                src={zoomedImage.url}
+                alt={zoomedImage.title}
+                className="max-w-full max-h-[75vh] object-contain rounded-lg shadow-lg"
+              />
+            </div>
+            <div className="pt-2 text-[11px] text-slate-400 flex items-center justify-between">
+              <span>Full resolution screenshot captured directly from Playwright execution context.</span>
+              <a
+                href={zoomedImage.url}
+                target="_blank"
+                rel="noreferrer"
+                className="text-sky-400 hover:underline flex items-center gap-1 font-semibold"
+              >
+                <span>Open in New Tab</span>
+                <ExternalLink className="w-3 h-3" />
+              </a>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

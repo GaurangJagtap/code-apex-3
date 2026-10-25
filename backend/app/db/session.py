@@ -37,9 +37,14 @@ def init_db():
             ],
             "test_executions": [
                 ("network_observations", "JSON DEFAULT '[]'"),
+                ("step_records", "JSON DEFAULT '[]'"),
             ],
             "bug_findings": [
                 ("dedup_key", "VARCHAR(100)"),
+                ("failed_step_index", "INTEGER"),
+                ("annotated_screenshot_url", "VARCHAR(500)"),
+                ("screenshot_before_url", "VARCHAR(500)"),
+                ("screenshot_after_url", "VARCHAR(500)"),
                 ("category", "VARCHAR(100) DEFAULT 'Functional behavior and navigation'"),
                 ("trust_score", "FLOAT DEFAULT 0.90"),
                 ("trust_breakdown", "JSON DEFAULT '{}'"),

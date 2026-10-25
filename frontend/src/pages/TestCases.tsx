@@ -18,7 +18,10 @@ import {
   ArrowRight,
   Eye,
   SlidersHorizontal,
-  BookmarkPlus
+  BookmarkPlus,
+  Image as ImageIcon,
+  Maximize2,
+  ChevronLeft
 } from 'lucide-react';
 import {
   fetchTestCases,
@@ -26,7 +29,9 @@ import {
   saveRegressionTest,
   TestCaseDetail,
   RunSummary,
-  fetchRuns
+  fetchRuns,
+  fetchTestStepExecutions,
+  TestStepExecution
 } from '../api/client';
 
 export const TestCases: React.FC = () => {
@@ -40,6 +45,9 @@ export const TestCases: React.FC = () => {
   const [priorityFilter, setPriorityFilter] = useState<string>('all');
   const [sourceFilter, setSourceFilter] = useState<string>('all');
   const [activeTestCase, setActiveTestCase] = useState<TestCaseDetail | null>(null);
+  const [stepExecutions, setStepExecutions] = useState<TestStepExecution[]>([]);
+  const [selectedStepForEvidence, setSelectedStepForEvidence] = useState<TestStepExecution | null>(null);
+  const [zoomImage, setZoomImage] = useState<{ url: string; title: string } | null>(null);
   const [modalLoading, setModalLoading] = useState<boolean>(false);
   const [actionNotice, setActionNotice] = useState<string | null>(null);
 
@@ -72,9 +80,12 @@ export const TestCases: React.FC = () => {
 
   const handleOpenDetail = async (id: string) => {
     setModalLoading(true);
+    setSelectedStepForEvidence(null);
     try {
       const detail = await fetchTestCase(id);
       setActiveTestCase(detail);
+      const steps = await fetchTestStepExecutions(id).catch(() => []);
+      setStepExecutions(steps);
     } catch (err) {
       console.error('Failed to load test case detail', err);
     } finally {
@@ -234,7 +245,7 @@ export const TestCases: React.FC = () => {
               className="w-full px-3 py-1.5 rounded-lg border border-[hsl(var(--border))] text-xs bg-[hsl(var(--secondary))]/30 focus:outline-none focus:ring-1 focus:ring-[hsl(var(--ring))]"
             >
               <option value="">All Test Runs</option>
-              {runs.map(r => (
+              {runs.map((r: RunSummary) => (
                 <option key={r.id} value={r.id}>
                   {r.target_url} ({r.id.substring(0, 8)}) - {r.status}
                 </option>
@@ -290,7 +301,7 @@ export const TestCases: React.FC = () => {
             All Categories ({testCases.length})
           </button>
           {categories.map(cat => {
-            const count = testCases.filter(t => t.category === cat).length;
+            const count = testCases.filter((t: TestCaseDetail) => t.category === cat).length;
             if (count === 0 && categoryFilter !== cat) return null;
             return (
               <button
@@ -337,7 +348,7 @@ export const TestCases: React.FC = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-[hsl(var(--border))]">
-                {testCases.map(tc => {
+                {testCases.map((tc: TestCaseDetail) => {
                   const exec = tc.execution;
                   const status = exec?.status || (tc as any).status || 'Pending';
                   const assertionResults = (exec?.assertion_results && exec.assertion_results.length > 0)
@@ -693,6 +704,306 @@ export const TestCases: React.FC = () => {
                 </button>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Side-by-Side Step Evidence Viewer Modal */}
+      {selectedStepForEvidence && (
+        <div className="fixed inset-0 z-60 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-slate-700 text-white rounded-2xl max-w-5xl w-full max-h-[92vh] flex flex-col shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+            {/* Header */}
+            <div className="p-4 border-b border-slate-800 flex items-center justify-between bg-slate-950/80">
+              <div className="flex items-center gap-3">
+                <span className="font-mono text-xs bg-emerald-950 text-emerald-400 border border-emerald-800 px-2 py-0.5 rounded">
+                  STEP #{selectedStepForEvidence.step_index + 1}
+                </span>
+                <span className="font-mono font-bold text-sm text-sky-400 uppercase">
+                  {selectedStepForEvidence.action}
+                </span>
+                <span
+                  className={`text-xs px-2 py-0.5 rounded font-bold ${
+                    selectedStepForEvidence.status === 'Failed'
+                      ? 'bg-rose-950 text-rose-400 border border-rose-800'
+                      : 'bg-emerald-950 text-emerald-400 border border-emerald-800'
+                  }`}
+                >
+                  {selectedStepForEvidence.status || 'Executed'}
+                </span>
+                {selectedStepForEvidence.screenshot_annotated_url && (
+                  <span className="text-xs px-2 py-0.5 rounded bg-rose-600 text-white font-bold animate-pulse">
+                    PULSED FAILURE REGION
+                  </span>
+                )}
+              </div>
+
+              <div className="flex items-center gap-2">
+                {/* Previous Step Navigation */}
+                {(() => {
+                  const currIdx = selectedStepForEvidence.step_index;
+                  const prevStep = stepExecutions.find(s => s.step_index === currIdx - 1);
+                  const nextStep = stepExecutions.find(s => s.step_index === currIdx + 1);
+
+                  return (
+                    <div className="flex items-center gap-1.5 mr-2">
+                      <button
+                        type="button"
+                        disabled={!prevStep}
+                        onClick={() => prevStep && setSelectedStepForEvidence(prevStep)}
+                        className={`px-2.5 py-1 rounded text-xs flex items-center gap-1 transition ${
+                          prevStep
+                            ? 'bg-slate-800 hover:bg-slate-700 text-slate-200'
+                            : 'bg-slate-800/40 text-slate-600 cursor-not-allowed'
+                        }`}
+                      >
+                        <ChevronLeft className="w-3.5 h-3.5" />
+                        <span>Prev Step</span>
+                      </button>
+                      <button
+                        type="button"
+                        disabled={!nextStep}
+                        onClick={() => nextStep && setSelectedStepForEvidence(nextStep)}
+                        className={`px-2.5 py-1 rounded text-xs flex items-center gap-1 transition ${
+                          nextStep
+                            ? 'bg-slate-800 hover:bg-slate-700 text-slate-200'
+                            : 'bg-slate-800/40 text-slate-600 cursor-not-allowed'
+                        }`}
+                      >
+                        <span>Next Step</span>
+                        <ChevronRight className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  );
+                })()}
+
+                <button
+                  onClick={() => setSelectedStepForEvidence(null)}
+                  className="p-1 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white transition"
+                >
+                  ✕
+                </button>
+              </div>
+            </div>
+
+            {/* Description & Route Metadata */}
+            <div className="px-5 py-2.5 bg-slate-900/90 border-b border-slate-800 text-xs flex items-center justify-between text-slate-300">
+              <div>
+                <span className="text-slate-400 font-medium">Action Description:</span>{' '}
+                <span className="text-white font-semibold">{selectedStepForEvidence.description}</span>
+                {selectedStepForEvidence.selector && (
+                  <code className="ml-2 text-sky-400 bg-slate-950 px-1.5 py-0.5 rounded text-[11px]">
+                    {selectedStepForEvidence.selector}
+                  </code>
+                )}
+              </div>
+              <div className="font-mono text-slate-400 text-[11px]">
+                Duration: {selectedStepForEvidence.duration_sec?.toFixed(2) || '0.00'}s
+              </div>
+            </div>
+
+            {/* Evidence Body */}
+            <div className="p-5 overflow-y-auto space-y-5 text-xs">
+              {/* Pre vs Post Action Comparison */}
+              <div>
+                <div className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 flex items-center justify-between">
+                  <span>Side-by-Side Journey State: Pre-Action vs Post-Action</span>
+                  <span className="text-[11px] text-slate-500 font-normal">Click any screenshot to zoom</span>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Before */}
+                  <div className="bg-slate-950 p-3 rounded-xl border border-slate-800 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-emerald-400 text-xs flex items-center gap-1.5">
+                        <span className="w-2 h-2 rounded-full bg-emerald-400" />
+                        Pre-Action Baseline (Before)
+                      </span>
+                      {selectedStepForEvidence.screenshot_before_url && (
+                        <button
+                          type="button"
+                          onClick={() => setZoomImage({ url: selectedStepForEvidence.screenshot_before_url!, title: 'Pre-Action Screenshot' })}
+                          className="text-[10px] text-slate-400 hover:text-white flex items-center gap-1"
+                        >
+                          <Maximize2 className="w-3 h-3" />
+                          <span>Expand</span>
+                        </button>
+                      )}
+                    </div>
+                    {selectedStepForEvidence.screenshot_before_url ? (
+                      <img
+                        src={selectedStepForEvidence.screenshot_before_url}
+                        alt="Pre-action screenshot"
+                        onClick={() => setZoomImage({ url: selectedStepForEvidence.screenshot_before_url!, title: 'Pre-Action Screenshot' })}
+                        className="w-full h-auto rounded-lg border border-slate-800 cursor-zoom-in hover:opacity-95 transition"
+                      />
+                    ) : (
+                      <div className="h-44 flex items-center justify-center text-slate-500 italic border border-slate-800/60 rounded-lg">
+                        Pre-action screenshot not captured for this action.
+                      </div>
+                    )}
+                    {selectedStepForEvidence.url_before && (
+                      <div className="text-[10px] font-mono text-slate-400 truncate">
+                        Route: {selectedStepForEvidence.url_before}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* After */}
+                  <div className="bg-slate-950 p-3 rounded-xl border border-slate-800 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-sky-400 text-xs flex items-center gap-1.5">
+                        <span className="w-2 h-2 rounded-full bg-sky-400" />
+                        Post-Action State (After)
+                      </span>
+                      {selectedStepForEvidence.screenshot_after_url && (
+                        <button
+                          type="button"
+                          onClick={() => setZoomImage({ url: selectedStepForEvidence.screenshot_after_url!, title: 'Post-Action Screenshot' })}
+                          className="text-[10px] text-slate-400 hover:text-white flex items-center gap-1"
+                        >
+                          <Maximize2 className="w-3 h-3" />
+                          <span>Expand</span>
+                        </button>
+                      )}
+                    </div>
+                    {selectedStepForEvidence.screenshot_after_url ? (
+                      <img
+                        src={selectedStepForEvidence.screenshot_after_url}
+                        alt="Post-action screenshot"
+                        onClick={() => setZoomImage({ url: selectedStepForEvidence.screenshot_after_url!, title: 'Post-Action Screenshot' })}
+                        className="w-full h-auto rounded-lg border border-slate-800 cursor-zoom-in hover:opacity-95 transition"
+                      />
+                    ) : (
+                      <div className="h-44 flex items-center justify-center text-slate-500 italic border border-slate-800/60 rounded-lg">
+                        Post-action screenshot not captured for this action.
+                      </div>
+                    )}
+                    {selectedStepForEvidence.url_after && (
+                      <div className="text-[10px] font-mono text-slate-400 truncate">
+                        Route: {selectedStepForEvidence.url_after}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Defect Highlight Section if Annotated Screenshot Exists */}
+              {(selectedStepForEvidence.screenshot_annotated_url || selectedStepForEvidence.screenshot_failure_url) && (
+                <div className="p-4 rounded-xl border-2 border-rose-500/60 bg-rose-950/20 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <XCircle className="w-4 h-4 text-rose-400" />
+                      <span className="font-bold text-rose-300 text-sm">
+                        Visual Failure Analysis & Exact Region Highlight
+                      </span>
+                    </div>
+                    <span className="text-[10px] bg-rose-500 text-white font-bold px-2 py-0.5 rounded animate-pulse">
+                      ORIGINAL PRESERVED &bull; ANNOTATED COPY GENERATED
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {selectedStepForEvidence.screenshot_failure_url && (
+                      <div className="space-y-1">
+                        <div className="text-[11px] font-semibold text-slate-300">Observed Failure (Original Unmodified)</div>
+                        <img
+                          src={selectedStepForEvidence.screenshot_failure_url}
+                          alt="Failure Screenshot"
+                          onClick={() => setZoomImage({ url: selectedStepForEvidence.screenshot_failure_url!, title: 'Original Failure Screenshot' })}
+                          className="w-full h-auto rounded-lg border border-slate-700 cursor-zoom-in"
+                        />
+                      </div>
+                    )}
+
+                    {selectedStepForEvidence.screenshot_annotated_url && (
+                      <div className="space-y-1">
+                        <div className="text-[11px] font-semibold text-rose-300 flex items-center gap-1">
+                          <span>Visual Defect Highlight (Contrasting Bounding Box)</span>
+                        </div>
+                        <img
+                          src={selectedStepForEvidence.screenshot_annotated_url}
+                          alt="Annotated Failure Screenshot"
+                          onClick={() => setZoomImage({ url: selectedStepForEvidence.screenshot_annotated_url!, title: 'Annotated Failure Highlight' })}
+                          className="w-full h-auto rounded-lg border-2 border-rose-500 shadow-lg cursor-zoom-in"
+                        />
+                        <p className="text-[10px] text-rose-200/80 mt-1">
+                          Defective element or region marked with contrasting red boundary and translucent alert overlay.
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Step Invariant Assertions */}
+              {Array.isArray(selectedStepForEvidence.assertion_results) && selectedStepForEvidence.assertion_results.length > 0 && (
+                <div className="space-y-2">
+                  <div className="font-bold text-slate-400 text-xs uppercase tracking-wider">
+                    Assertions Evaluated at this Step ({selectedStepForEvidence.assertion_results.length})
+                  </div>
+                  <div className="space-y-1.5">
+                    {selectedStepForEvidence.assertion_results.map((asr: any, aIdx: number) => (
+                      <div
+                        key={aIdx}
+                        className={`p-2.5 rounded-lg border text-xs flex items-center justify-between ${
+                          asr.passed
+                            ? 'bg-emerald-950/40 border-emerald-800 text-emerald-300'
+                            : 'bg-rose-950/40 border-rose-800 text-rose-300'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2">
+                          {asr.passed ? (
+                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                          ) : (
+                            <XCircle className="w-3.5 h-3.5 text-rose-400" />
+                          )}
+                          <span className="font-mono">{asr.type}</span>
+                          <span className="text-slate-300">{asr.message}</span>
+                        </div>
+                        <span className="text-[10px] font-bold uppercase">
+                          {asr.passed ? 'PASSED' : 'FAILED'}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="p-3 border-t border-slate-800 bg-slate-950 flex items-center justify-between text-xs">
+              <span className="text-slate-400">
+                Proof-Carrying Screenshot Evidence &bull; Preserved in isolated artifact storage
+              </span>
+              <button
+                type="button"
+                onClick={() => setSelectedStepForEvidence(null)}
+                className="px-4 py-1.5 bg-slate-800 hover:bg-slate-700 text-white rounded-lg font-medium transition"
+              >
+                Back to Journey Timeline
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Full-Screen Zoom Modal */}
+      {zoomImage && (
+        <div
+          className="fixed inset-0 z-70 bg-black/90 backdrop-blur-md flex flex-col items-center justify-center p-4"
+          onClick={() => setZoomImage(null)}
+        >
+          <div className="max-w-6xl w-full flex items-center justify-between text-white pb-3" onClick={e => e.stopPropagation()}>
+            <span className="font-semibold text-sm">{zoomImage.title}</span>
+            <button
+              onClick={() => setZoomImage(null)}
+              className="text-slate-400 hover:text-white px-3 py-1 bg-slate-800 rounded-lg text-xs"
+            >
+              Close Zoom (ESC)
+            </button>
+          </div>
+          <div className="max-w-6xl max-h-[85vh] overflow-auto rounded-xl border border-slate-800 bg-slate-950 p-2" onClick={e => e.stopPropagation()}>
+            <img src={zoomImage.url} alt={zoomImage.title} className="w-full h-auto object-contain rounded-lg shadow-2xl" />
           </div>
         </div>
       )}

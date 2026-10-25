@@ -117,11 +117,33 @@ class BugFindingResponse(BaseModel):
     suggested_fix: Optional[str] = None
     alternative_explanations: Optional[str] = None
     screenshot_url: Optional[str] = None
+    annotated_screenshot_url: Optional[str] = None
+    screenshot_before_url: Optional[str] = None
+    screenshot_after_url: Optional[str] = None
+    failed_step_index: Optional[int] = None
     console_errors: List[str] = []
     network_status: Dict[str, Any] = Field(default_factory=dict)
     regression_test_id: Optional[str] = None
     replay_attempts: int = 1
     created_at: str
+
+class TestStepExecutionResponse(BaseModel):
+    step_index: int
+    action: str
+    description: str
+    selector: Optional[str] = None
+    value: Optional[str] = None
+    url_before: Optional[str] = None
+    url_after: Optional[str] = None
+    duration_sec: float = 0.0
+    status: str = "Passed"
+    error_message: Optional[str] = None
+    screenshot_before_id: Optional[str] = None
+    screenshot_after_id: Optional[str] = None
+    screenshot_failure_id: Optional[str] = None
+    screenshot_annotated_id: Optional[str] = None
+    screenshot_urls: Dict[str, Optional[str]] = Field(default_factory=dict)
+    assertion_results: List[Dict[str, Any]] = Field(default_factory=list)
 
 class TestExecutionResponse(BaseModel):
     __test__ = False
@@ -144,6 +166,7 @@ class TestExecutionResponse(BaseModel):
     actual_observations: Optional[str] = None
     assertion_results: List[Dict[str, Any]] = []
     screenshot_urls: List[str] = []
+    step_records: List[Dict[str, Any]] = Field(default_factory=list)
     console_logs: List[str] = []
     network_observations: List[Dict[str, Any]] = Field(default_factory=list)
     finding_id: Optional[str] = None
@@ -184,6 +207,8 @@ class RegressionTestResponse(BaseModel):
     last_run_at: Optional[str] = None
     last_status: str
     executions_count: int
+    structured_steps: Optional[List[Dict[str, Any]]] = None
+    assertions: Optional[List[Dict[str, Any]]] = None
 
 class RegressionRunResultResponse(BaseModel):
     execution_id: str
