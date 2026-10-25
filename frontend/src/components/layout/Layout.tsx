@@ -52,6 +52,7 @@ export const Layout: React.FC = () => {
   const navItems = [
     { label: 'Overview', path: '/dashboard', icon: LayoutDashboard },
     { label: 'New Test Run', path: '/new-run', icon: PlayCircle },
+    { label: 'Generation Trace', path: '/trace', icon: Sparkles },
     { label: 'Exploration Map', path: '/explore', icon: Compass },
     { label: 'Test Runs', path: '/runs', icon: ListChecks },
     { label: 'Test Cases', path: '/test-cases', icon: FileCheck2 },

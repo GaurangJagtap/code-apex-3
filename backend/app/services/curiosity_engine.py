@@ -97,6 +97,84 @@ class CuriosityEngine:
             "reasoning": reasoning
         }
 
+    def identify_opportunities(self, scout_observations: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """
+        Analyzes discovered website pages, forms, and controls to identify concrete testing opportunities.
+        Returns explainable hypotheses explaining what was noticed, why it is worth testing, and proposed objectives.
+        """
+        opportunities = []
+        opp_counter = 0
+
+        for page in scout_observations:
+            url = page.get("url", "")
+            title = page.get("title", "")
+            controls = page.get("controls", [])
+            forms = page.get("forms", [])
+            links = page.get("links", [])
+            url_lower = url.lower()
+
+            # 1. Transactional & Business Workflow Opportunity
+            if any(k in url_lower for k in ["cart", "checkout", "assessment", "order", "login"]):
+                opp_counter += 1
+                opportunities.append({
+                    "opportunity_id": f"OPP-{opp_counter:02d}",
+                    "page_url": url,
+                    "target": "Core transactional state machine",
+                    "what_noticed": f"Transactional route '{url}' discovered with {len(controls)} interactive elements.",
+                    "hypothesis": "High business criticality workflow requires verification of calculation, state transitions, and idempotency.",
+                    "testing_objective": "Validate business invariants, form submissions, and error boundary handling.",
+                    "selection_status": "selected",
+                    "selection_reason": "High impact transactional path touching revenue, assessments, or user identity.",
+                    "supporting_observations": [c.get("obs_id") for c in controls[:3] if c.get("obs_id")] or [f"page-{url}"]
+                })
+
+            # 2. Form Validation & Data Entry Opportunity
+            if forms or any(c.get("role") == "input" for c in controls):
+                opp_counter += 1
+                inp_count = sum(1 for c in controls if c.get("role") == "input")
+                opportunities.append({
+                    "opportunity_id": f"OPP-{opp_counter:02d}",
+                    "page_url": url,
+                    "target": f"Input fields & submission controls ({inp_count} inputs)",
+                    "what_noticed": f"Discovered forms with {inp_count} interactive input controls and field constraints.",
+                    "hypothesis": "Forms frequently fail to validate input boundaries, character length limits, and malformed submissions.",
+                    "testing_objective": "Validate field boundary restrictions, required indicators, and rejection of malformed inputs.",
+                    "selection_status": "selected",
+                    "selection_reason": "Unvalidated input fields present high risk of data corruption or client-side crashes.",
+                    "supporting_observations": [c.get("obs_id") for c in controls if c.get("role") == "input" and c.get("obs_id")][:3]
+                })
+
+            # 3. Interrupted Workflow & Refresh State Recovery Opportunity
+            opp_counter += 1
+            opportunities.append({
+                "opportunity_id": f"OPP-{opp_counter:02d}",
+                "page_url": url,
+                "target": "Session state persistence & page reload resilience",
+                "what_noticed": f"Complex DOM state on '{title or url}' subject to unexpected browser reload or network drops.",
+                "hypothesis": "Client-side state may be wiped or reset on refresh, disrupting user workflow or losing critical progress.",
+                "testing_objective": "Verify session storage, form persistence, and graceful recovery across page reloads.",
+                "selection_status": "selected",
+                "selection_reason": "Ensures uninterrupted user journey and prevents loss of candidate answers or shopping cart items.",
+                "supporting_observations": [c.get("obs_id") for c in controls[:2] if c.get("obs_id")] or [f"page-{url}"]
+            })
+
+            # 4. Multi-hop Navigation & Broken Link Opportunity
+            if links:
+                opp_counter += 1
+                opportunities.append({
+                    "opportunity_id": f"OPP-{opp_counter:02d}",
+                    "page_url": url,
+                    "target": f"Navigation graph edges ({len(links)} discovered links)",
+                    "what_noticed": f"Discovered {len(links)} outbound route links from {url}.",
+                    "hypothesis": "Internal navigation routes could result in 404 dead ends or unhandled redirect loops.",
+                    "testing_objective": "Verify navigation targets resolve with status 200 and document body renders cleanly.",
+                    "selection_status": "selected" if len(links) > 0 else "deferred",
+                    "selection_reason": "Validates application reachable graph and internal routing integrity.",
+                    "supporting_observations": [f"link-{l}" for l in links[:3]]
+                })
+
+        return opportunities
+
     def record_selection(self, path: str, category: str):
         """Updates internal state after a test journey is executed."""
         self.visited_paths.add(path)

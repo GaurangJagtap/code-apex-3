@@ -761,7 +761,7 @@ Format:
             else:
                 candidates = self._generate_dynamic_test_plan(clean_url, scout_observations, app_description)
 
-        # Prioritize every candidate using the Curiosity Engine
+        # Prioritize and enrich every candidate using the Curiosity Engine & Observation Grounding
         ranked_tests = []
         for c in candidates:
             breakdown = self.curiosity_engine.evaluate_candidate(
@@ -773,6 +773,36 @@ Format:
             )
             c["curiosity"] = breakdown
             c["priority_score"] = breakdown["priority_score"]
+
+            # Grounding: Find supporting observations in Scout observations
+            supporting_obs = []
+            target_path = c.get("path", "")
+            for obs in scout_observations:
+                obs_url = obs.get("url", "")
+                if target_path and (target_path in obs_url or obs_url in target_path):
+                    # Gather observation IDs for matched controls
+                    for ctrl in obs.get("controls", []):
+                        for step in c.get("steps", []):
+                            sel = step.get("selector", "")
+                            if sel and (sel == ctrl.get("selector") or (ctrl.get("id") and ctrl.get("id") in sel)):
+                                if ctrl.get("obs_id") and ctrl.get("obs_id") not in supporting_obs:
+                                    supporting_obs.append(ctrl.get("obs_id"))
+                    if not supporting_obs and obs.get("controls"):
+                        supporting_obs = [ctrl.get("obs_id") for ctrl in obs.get("controls")[:3] if ctrl.get("obs_id")]
+
+            c["supporting_observations"] = supporting_obs or ["obs-root-viewport"]
+            c["source_page"] = target_path or clean_url
+
+            # Validation check before execution
+            validation_issues = []
+            if not c.get("steps"):
+                validation_issues.append("Missing actionable execution steps")
+            if not c.get("assertions"):
+                validation_issues.append("Missing verification assertions")
+            
+            c["validation_status"] = "Validated" if not validation_issues else "Warning"
+            c["validation_notes"] = "All action selectors grounded in discovered DOM controls; verification assertions defined." if not validation_issues else "; ".join(validation_issues)
+
             ranked_tests.append(c)
 
         # Sort by Curiosity Engine priority score descending

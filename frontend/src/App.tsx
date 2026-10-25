@@ -12,6 +12,7 @@ import { BugDetail } from './pages/BugDetail';
 import { RegressionTests } from './pages/RegressionTests';
 import { Benchmark } from './pages/Benchmark';
 import { Settings } from './pages/Settings';
+import { GenerationTrace } from './pages/GenerationTrace';
 import { ErrorBoundary } from './components/common/ErrorBoundary';
 
 export function App() {
@@ -28,6 +29,7 @@ export function App() {
             <Route path="/workspace" element={<Navigate to="/dashboard" replace />} />
             <Route path="/new-run" element={<NewRun />} />
             <Route path="/explore" element={<Exploration />} />
+            <Route path="/trace" element={<GenerationTrace />} />
             <Route path="/runs" element={<TestRuns />} />
             <Route path="/test-cases" element={<TestCases />} />
             <Route path="/baselines" element={<Navigate to="/test-cases" replace />} />

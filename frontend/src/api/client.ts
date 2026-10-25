@@ -389,7 +389,90 @@ export const fetchRun = (id: string) => api.get<RunSummary>(`/runs/${id}`).then(
 export const fetchRunEvents = (id: string) => api.get<RunEvent[]>(`/runs/${id}/events`).then(res => res.data);
 export const fetchRunTests = (id: string) => api.get<TestCaseExecution[]>(`/runs/${id}/tests`).then(res => res.data);
 export const fetchRunExploration = (id: string) => api.get<ExploredPage[]>(`/runs/${id}/exploration`).then(res => res.data);
+export interface CuriosityOpportunity {
+  opportunity_id: string;
+  page_url: string;
+  target: string;
+  what_noticed: string;
+  hypothesis: string;
+  testing_objective: string;
+  selection_status: string;
+  selection_reason: string;
+  supporting_observations: string[];
+}
+
+export interface GenerationTraceData {
+  run_id: string;
+  target_url: string;
+  mode: string;
+  status: string;
+  stages: {
+    exploration: string;
+    properties: string;
+    curiosity: string;
+    generation: string;
+    validation: string;
+    execution: string;
+    verification: string;
+  };
+  pages_explored: Array<{
+    id: string;
+    url: string;
+    title: string;
+    depth: number;
+    controls_count: number;
+    links: string[];
+  }>;
+  captured_properties: {
+    pages: any[];
+    interactive_elements: any[];
+    forms: any[];
+    runtime_signals: any[];
+    visual_evidence: any[];
+  };
+  curiosity_opportunities: CuriosityOpportunity[];
+  test_cases: Array<{
+    id: string;
+    title: string;
+    objective: string;
+    category: string;
+    priority: string;
+    priority_score: number;
+    status: string;
+    expectation_source: string;
+    baseline_id?: string;
+    preconditions?: string;
+    test_data?: Record<string, any>;
+    steps: Array<{ action: string; selector?: string; value?: string; description: string }>;
+    assertions: Array<{ type: string; target: string; expected?: string; message?: string }>;
+    assertion_results?: Array<{ type: string; passed: boolean; actual: string; message: string }>;
+    curiosity_breakdown?: any;
+    provenance: {
+      opportunity_id: string;
+      supporting_observations: string[];
+      source_page: string;
+      generating_agent: string;
+      validation_status: string;
+      validation_notes: string;
+    };
+    execution: {
+      duration_sec: number;
+      actual_observations?: string;
+      screenshot_urls: string[];
+      finding_id?: string;
+    };
+  }>;
+  total_tests: number;
+  passed_count: number;
+  failed_count: number;
+  findings_count: number;
+}
+
+export const fetchRunGenerationTrace = (runId: string) =>
+  api.get<GenerationTraceData>(`/runs/${runId}/trace`).then(res => res.data);
+
 export const fetchRunSiteMap = (id: string) => api.get<{ nodes: any[]; edges: any[]; total_nodes: number; total_edges: number }>(`/runs/${id}/site-map`).then(res => res.data);
+
 export const cancelRun = (id: string) => api.post(`/runs/${id}/cancel`).then(res => res.data);
 
 // Test Cases API

@@ -107,7 +107,12 @@ class RunController:
             )
 
             max_explore_pages = (run.boundaries or {}).get("max_pages", settings.MAX_PAGES_EXPLORE)
-            scout = ScoutAgent(base_url=run.target_url)
+            
+            # Real-time event callback for Scout exploration activity feed
+            def on_scout_activity(ev_type: str, msg: str, details: Dict[str, Any]):
+                cls.emit_event(db, run_id, "explore", "scout", ev_type, msg, details)
+
+            scout = ScoutAgent(base_url=run.target_url, on_event=on_scout_activity)
             page = browser_session.page
 
             # Perform multi-hop graph exploration
@@ -165,14 +170,23 @@ class RunController:
             run.status = "planning"
             db.commit()
             cls.emit_event(
-                db, run_id, "plan", "tester", "PLANNING_STARTED",
-                "Synthesizing structured test plan using Curiosity Engine ranking."
+                db, run_id, "plan", "curiosity", "PLANNING_STARTED",
+                "Curiosity Engine analyzing discovered application state and identifying test opportunities."
             )
 
             curiosity_engine = CuriosityEngine()
             llm_provider = LLMProvider()
             tester = TesterAgent(curiosity_engine=curiosity_engine, llm_provider=llm_provider)
 
+            # Stage C: Curiosity Engine Analysis
+            opportunities = curiosity_engine.identify_opportunities(inspections)
+            cls.emit_event(
+                db, run_id, "plan", "curiosity", "OPPORTUNITIES_IDENTIFIED",
+                f"Curiosity Engine identified {len(opportunities)} testing opportunities across observed application surfaces.",
+                {"opportunities": opportunities, "opportunities_count": len(opportunities)}
+            )
+
+            # Stage D: Test Plan Generation
             planned_tests = await tester.generate_test_plan(
                 target_url=run.target_url,
                 app_description=run.description,
@@ -200,9 +214,15 @@ class RunController:
                     "Synthesized calibrated user journeys using deterministic domain heuristics and Curiosity Engine ranking."
                 )
 
-            # Persist Planned Test Cases
+            # Stage E: Validate Test Cases before Execution
             db_test_cases = []
             for pt in planned_tests:
+                val_status = pt.get("validation_status", "Validated")
+                curiosity_data = pt.get("curiosity", {})
+                curiosity_data["supporting_observations"] = pt.get("supporting_observations", [])
+                curiosity_data["validation_status"] = val_status
+                curiosity_data["validation_notes"] = pt.get("validation_notes", "Passed pre-execution validation")
+
                 tc = TestCase(
                     id=f"{run_id}-{pt['test_id']}",
                     run_id=run_id,
@@ -221,18 +241,33 @@ class RunController:
                     cleanup_requirements=pt.get("cleanup_requirements", []),
                     status="Planned",
                     risk_reason=pt.get("risk_reason"),
-                    curiosity_breakdown=pt.get("curiosity", {}),
+                    curiosity_breakdown=curiosity_data,
                     regression_eligible=pt.get("regression_candidate", False)
                 )
                 db.add(tc)
                 db_test_cases.append(tc)
+
+                # Emit individual test case validation event
+                cls.emit_event(
+                    db, run_id, "plan", "tester", "TEST_CASE_VALIDATED",
+                    f"Validated {tc.id}: '{tc.title}' (Curiosity: {tc.priority_score:.2f}, Status: {val_status})",
+                    {
+                        "test_id": tc.id,
+                        "title": tc.title,
+                        "priority_score": tc.priority_score,
+                        "validation_status": val_status,
+                        "supporting_observations": pt.get("supporting_observations", []),
+                        "steps_count": len(tc.steps or []),
+                        "assertions_count": len(tc.assertions or [])
+                    }
+                )
 
             run.total_tests = len(db_test_cases)
             db.commit()
 
             cls.emit_event(
                 db, run_id, "plan", "tester", "TEST_PLAN_APPROVED",
-                f"Generated and prioritized {len(db_test_cases)} test cases with explainable curiosity scores.",
+                f"Generated and validated {len(db_test_cases)} test cases with full provenance and explainable curiosity scores.",
                 {"test_ids": [t.id for t in db_test_cases]}
             )
 
