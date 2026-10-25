@@ -172,32 +172,32 @@ export const NewRun: React.FC = () => {
     <div className="max-w-4xl mx-auto space-y-6">
       {/* Header */}
       <div>
-        <h2 className="text-xl font-bold text-[#0f172a]">Launch Autonomous QA Test Run</h2>
-        <p className="text-sm text-[#64748b] mt-1">
+        <h2 className="text-lg font-bold text-[#171717] tracking-tight">Launch Autonomous QA Test Run</h2>
+        <p className="text-xs text-[#525866] mt-1">
           Specify target URL and intended application behavior. Scout, Tester, and Verifier agents will autonomously explore, plan, execute, and verify defects.
         </p>
       </div>
 
       {error && (
-        <div className="bg-rose-50 border border-rose-200 text-rose-800 p-4 rounded-xl flex items-start gap-3 text-sm">
-          <AlertCircle className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
+        <div className="bg-rose-50 border border-rose-200 text-rose-800 p-3.5 rounded-lg flex items-start gap-3 text-xs">
+          <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
           <div>{error}</div>
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <form onSubmit={handleSubmit} className="space-y-5">
         {/* Target Details Card */}
-        <div className="bg-white p-6 rounded-xl border border-[#e2e8f0] shadow-sm space-y-5">
-          <div className="flex items-center justify-between pb-3 border-b border-[#e2e8f0]">
-            <h3 className="font-semibold text-sm text-[#0f172a] flex items-center gap-2">
-              <Shield className="w-4 h-4 text-[#047857]" />
+        <div className="bg-white p-5 rounded-xl border border-[#E5E7EB] shadow-xs space-y-4">
+          <div className="flex items-center justify-between pb-3 border-b border-[#E5E7EB]">
+            <h3 className="font-semibold text-xs text-[#171717] uppercase tracking-wider flex items-center gap-2">
+              <Shield className="w-3.5 h-3.5 text-[#635BFF]" />
               Target Application & Intended Behavior
             </h3>
             {targetUrl.includes('5001') && (
               <button
                 type="button"
                 onClick={handleResetDemoApp}
-                className="text-xs font-semibold text-[#047857] hover:underline"
+                className="text-xs font-medium text-[#635BFF] hover:underline"
               >
                 Reset Sample App Data
               </button>
@@ -206,7 +206,7 @@ export const NewRun: React.FC = () => {
 
           {/* Quick Target URL Presets */}
           <div className="space-y-2">
-            <label className="block text-xs font-semibold text-[#475569] uppercase tracking-wider">
+            <label className="block text-xs font-semibold text-[#525866] uppercase tracking-wider">
               Quick Target Presets (Or paste any custom web URL below)
             </label>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
@@ -219,20 +219,22 @@ export const NewRun: React.FC = () => {
                     onClick={() => handleSelectPreset(preset)}
                     className={`text-left p-3 rounded-lg border transition-all flex flex-col justify-between ${
                       isSelected
-                        ? 'border-[#047857] bg-emerald-50/80 ring-1 ring-[#047857]'
-                        : 'border-[#cbd5e1] hover:border-[#94a3b8] bg-[#f8fafc]'
+                        ? 'border-[#635BFF] bg-[#F0EFFF] ring-1 ring-[#635BFF]'
+                        : 'border-[#E5E7EB] hover:border-[#D1D5DB] bg-white hover:bg-[#F8F9FB]'
                     }`}
                   >
                     <div>
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="text-xs font-bold text-[#0f172a]">{preset.name}</span>
-                        <span className={`text-[10px] px-1.5 py-0.5 rounded font-semibold ${
-                          isSelected ? 'bg-emerald-200 text-emerald-900' : 'bg-slate-200 text-slate-700'
+                      <div className="flex items-center justify-between mb-1 gap-1">
+                        <span className={`text-xs font-bold truncate ${isSelected ? 'text-[#635BFF]' : 'text-[#171717]'}`}>
+                          {preset.name}
+                        </span>
+                        <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium shrink-0 ${
+                          isSelected ? 'bg-[#635BFF] text-white' : 'bg-[#F3F4F6] text-[#525866]'
                         }`}>
                           {preset.badge}
                         </span>
                       </div>
-                      <div className="text-[11px] font-mono text-[#64748b] truncate">{preset.url}</div>
+                      <div className="text-[11px] font-mono text-[#858B98] truncate">{preset.url}</div>
                     </div>
                   </button>
                 );
@@ -302,9 +304,9 @@ export const NewRun: React.FC = () => {
         </div>
 
         {/* Universal Exploratory vs Deep Verification Mode */}
-        <div className="bg-white p-6 rounded-xl border border-[hsl(var(--border))] shadow-xs space-y-4">
-          <h3 className="font-semibold text-sm text-[hsl(var(--foreground))] flex items-center gap-2 pb-3 border-b border-[hsl(var(--border))]">
-            <Compass className="w-4 h-4 text-[hsl(var(--accent))]" />
+        <div className="bg-white p-5 rounded-xl border border-[#E5E7EB] shadow-xs space-y-4">
+          <h3 className="font-semibold text-xs text-[#171717] uppercase tracking-wider flex items-center gap-2 pb-3 border-b border-[#E5E7EB]">
+            <Compass className="w-3.5 h-3.5 text-[#635BFF]" />
             Exploration & Verification Mode (IM-02 Specification)
           </h3>
 
@@ -312,8 +314,8 @@ export const NewRun: React.FC = () => {
             <label
               className={`p-4 border rounded-xl cursor-pointer flex items-start gap-3 transition ${
                 testMode === 'deep_verification'
-                  ? 'bg-indigo-50/70 border-indigo-300 ring-1 ring-indigo-300'
-                  : 'bg-white border-[hsl(var(--border))] hover:bg-[hsl(var(--secondary))]/40'
+                  ? 'bg-[#F0EFFF] border-[#635BFF] ring-1 ring-[#635BFF]'
+                  : 'bg-white border-[#E5E7EB] hover:bg-[#F8F9FB]'
               }`}
             >
               <input
@@ -322,14 +324,14 @@ export const NewRun: React.FC = () => {
                 value="deep_verification"
                 checked={testMode === 'deep_verification'}
                 onChange={() => setTestMode('deep_verification')}
-                className="mt-1 text-[hsl(var(--accent))]"
+                className="mt-1 text-[#635BFF]"
               />
               <div>
-                <div className="font-semibold text-sm text-[hsl(var(--foreground))] flex items-center gap-1.5">
-                  <Shield className="w-3.5 h-3.5 text-indigo-600" />
+                <div className="font-semibold text-xs text-[#171717] flex items-center gap-1.5">
+                  <Shield className="w-3.5 h-3.5 text-[#635BFF]" />
                   Mode B: Deep Verification Mode
                 </div>
-                <p className="text-xs text-[hsl(var(--muted-foreground))] mt-1 leading-relaxed">
+                <p className="text-xs text-[#525866] mt-1 leading-relaxed">
                   Evaluates business logic, state recovery across page reloads, double-click transaction idempotency, and access controls against explicit behavioral baselines.
                 </p>
               </div>
@@ -338,8 +340,8 @@ export const NewRun: React.FC = () => {
             <label
               className={`p-4 border rounded-xl cursor-pointer flex items-start gap-3 transition ${
                 testMode === 'universal_exploratory'
-                  ? 'bg-indigo-50/70 border-indigo-300 ring-1 ring-indigo-300'
-                  : 'bg-white border-[hsl(var(--border))] hover:bg-[hsl(var(--secondary))]/40'
+                  ? 'bg-[#F0EFFF] border-[#635BFF] ring-1 ring-[#635BFF]'
+                  : 'bg-white border-[#E5E7EB] hover:bg-[#F8F9FB]'
               }`}
             >
               <input
@@ -348,14 +350,14 @@ export const NewRun: React.FC = () => {
                 value="universal_exploratory"
                 checked={testMode === 'universal_exploratory'}
                 onChange={() => setTestMode('universal_exploratory')}
-                className="mt-1 text-[hsl(var(--accent))]"
+                className="mt-1 text-[#635BFF]"
               />
               <div>
-                <div className="font-semibold text-sm text-[hsl(var(--foreground))] flex items-center gap-1.5">
-                  <Compass className="w-3.5 h-3.5 text-indigo-600" />
+                <div className="font-semibold text-xs text-[#171717] flex items-center gap-1.5">
+                  <Compass className="w-3.5 h-3.5 text-[#635BFF]" />
                   Mode A: Universal Exploratory Mode
                 </div>
-                <p className="text-xs text-[hsl(var(--muted-foreground))] mt-1 leading-relaxed">
+                <p className="text-xs text-[#525866] mt-1 leading-relaxed">
                   Scout autonomously crawls same-origin links, discovers forms, inputs, and interactive widgets without bespoke code. Generates and executes general UI test journeys.
                 </p>
               </div>
@@ -363,20 +365,20 @@ export const NewRun: React.FC = () => {
           </div>
 
           {/* Baseline Profile Selection */}
-          <div className="pt-2 border-t border-[hsl(var(--border))]">
+          <div className="pt-2 border-t border-[#E5E7EB]">
             <div className="flex items-center justify-between mb-2">
-              <label className="text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider flex items-center gap-1">
-                <Scale className="w-3.5 h-3.5 text-[hsl(var(--accent))]" />
+              <label className="text-xs font-semibold text-[#525866] uppercase tracking-wider flex items-center gap-1">
+                <Scale className="w-3.5 h-3.5 text-[#635BFF]" />
                 Behavioral Baseline Profile
               </label>
-              <span className="text-[11px] text-[hsl(var(--muted-foreground))]">
+              <span className="text-[11px] text-[#858B98]">
                 Asserts against documented ground truth
               </span>
             </div>
             <select
               value={baselineProfile}
               onChange={e => setBaselineProfile(e.target.value)}
-              className="w-full px-3.5 py-2 text-xs border border-[hsl(var(--border))] rounded-lg bg-[hsl(var(--secondary))]/30 focus:outline-none focus:ring-1 focus:ring-[hsl(var(--ring))]"
+              className="w-full px-3.5 py-2 text-xs border border-[#E5E7EB] rounded-lg bg-[#F8F9FB] focus:outline-none focus:ring-1 focus:ring-[#635BFF] text-[#171717]"
             >
               <option value="assessment">AssessPro / iMocha Assessment Baseline (Answer Refresh Persistence, Score Invariants, Submission Idempotency)</option>
               <option value="ecommerce">E-Commerce DevStore & QuickBite Baseline (Cart Math, Address Rules, Order Idempotency, Access Control)</option>
@@ -387,14 +389,14 @@ export const NewRun: React.FC = () => {
         </div>
 
         {/* Objectives & Engine */}
-        <div className="bg-white p-6 rounded-xl border border-[hsl(var(--border))] shadow-xs space-y-4">
-          <h3 className="font-semibold text-sm text-[hsl(var(--foreground))] flex items-center gap-2 pb-3 border-b border-[hsl(var(--border))]">
-            <Layers className="w-4 h-4 text-[hsl(var(--accent))]" />
+        <div className="bg-white p-5 rounded-xl border border-[#E5E7EB] shadow-xs space-y-4">
+          <h3 className="font-semibold text-xs text-[#171717] uppercase tracking-wider flex items-center gap-2 pb-3 border-b border-[#E5E7EB]">
+            <Layers className="w-3.5 h-3.5 text-[#635BFF]" />
             Testing Objectives & Agent Provider
           </h3>
 
           <div>
-            <div className="text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider mb-2">
+            <div className="text-xs font-semibold text-[#525866] uppercase tracking-wider mb-2">
               Select Testing Objectives
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
@@ -407,11 +409,11 @@ export const NewRun: React.FC = () => {
                     onClick={() => toggleObjective(obj)}
                     className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-xs font-medium text-left transition ${
                       checked
-                        ? 'bg-[hsl(var(--secondary))] border-[hsl(var(--primary))] text-[hsl(var(--primary))] font-semibold'
-                        : 'bg-white border-[hsl(var(--border))] text-[hsl(var(--muted-foreground))] hover:border-slate-300'
+                        ? 'bg-[#F0EFFF] border-[#635BFF] text-[#635BFF] font-semibold ring-1 ring-[#635BFF]/30'
+                        : 'bg-white border-[#E5E7EB] text-[#525866] hover:border-[#D1D5DB] hover:bg-[#F8F9FB]'
                     }`}
                   >
-                    <CheckSquare className={`w-3.5 h-3.5 ${checked ? 'text-[hsl(var(--accent))]' : 'text-slate-300'}`} />
+                    <CheckSquare className={`w-3.5 h-3.5 ${checked ? 'text-[#635BFF]' : 'text-[#858B98]'}`} />
                     <span>{obj}</span>
                   </button>
                 );
@@ -420,15 +422,15 @@ export const NewRun: React.FC = () => {
           </div>
 
           <div className="pt-2">
-            <div className="text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider mb-2">
+            <div className="text-xs font-semibold text-[#525866] uppercase tracking-wider mb-2">
               Agent Synthesis Engine
             </div>
             <div className="grid grid-cols-2 gap-3">
               <label
                 className={`p-3.5 border rounded-lg cursor-pointer flex items-start gap-3 transition ${
                   mode === 'demo'
-                    ? 'bg-[hsl(var(--secondary))] border-[hsl(var(--border))] ring-1 ring-[hsl(var(--border))]'
-                    : 'bg-white border-[hsl(var(--border))] hover:border-slate-300'
+                    ? 'bg-[#F0EFFF] border-[#635BFF] ring-1 ring-[#635BFF]'
+                    : 'bg-white border-[#E5E7EB] hover:border-[#D1D5DB]'
                 }`}
               >
                 <input
@@ -440,11 +442,11 @@ export const NewRun: React.FC = () => {
                   className="mt-1"
                 />
                 <div>
-                  <div className="font-semibold text-xs text-[hsl(var(--foreground))] flex items-center gap-1.5">
-                    <Cpu className="w-3.5 h-3.5 text-slate-700" />
+                  <div className="font-semibold text-xs text-[#171717] flex items-center gap-1.5">
+                    <Cpu className="w-3.5 h-3.5 text-[#635BFF]" />
                     Deterministic Engine Mode
                   </div>
-                  <p className="text-[11px] text-[hsl(var(--muted-foreground))] mt-0.5">
+                  <p className="text-[11px] text-[#525866] mt-0.5">
                     Real Playwright browser automation with deterministic scenarios calibrated for reproducible test journeys.
                   </p>
                 </div>
@@ -453,8 +455,8 @@ export const NewRun: React.FC = () => {
               <label
                 className={`p-3.5 border rounded-lg cursor-pointer flex items-start gap-3 transition ${
                   mode === 'ai'
-                    ? 'bg-purple-50/50 border-purple-200 ring-1 ring-purple-200'
-                    : 'bg-white border-[hsl(var(--border))] hover:border-slate-300'
+                    ? 'bg-[#F0EFFF] border-[#635BFF] ring-1 ring-[#635BFF]'
+                    : 'bg-white border-[#E5E7EB] hover:border-[#D1D5DB]'
                 }`}
               >
                 <input
@@ -466,11 +468,11 @@ export const NewRun: React.FC = () => {
                   className="mt-1"
                 />
                 <div>
-                  <div className="font-semibold text-xs text-[hsl(var(--foreground))] flex items-center gap-1.5">
-                    <Sparkles className="w-3.5 h-3.5 text-purple-600" />
+                  <div className="font-semibold text-xs text-[#171717] flex items-center gap-1.5">
+                    <Sparkles className="w-3.5 h-3.5 text-[#635BFF]" />
                     Autonomous AI Mode (LLM-Powered)
                   </div>
-                  <p className="text-[11px] text-[hsl(var(--muted-foreground))] mt-0.5">
+                  <p className="text-[11px] text-[#525866] mt-0.5">
                     Uses configured LLM provider to reason about DOM state and synthesize structured test candidates with Pydantic validation.
                   </p>
                 </div>
@@ -480,15 +482,15 @@ export const NewRun: React.FC = () => {
         </div>
 
         {/* Safety Boundaries */}
-        <div className="bg-white p-6 rounded-xl border border-[hsl(var(--border))] shadow-xs space-y-4">
-          <h3 className="font-semibold text-sm text-[hsl(var(--foreground))] flex items-center gap-2 pb-3 border-b border-[hsl(var(--border))]">
-            <Sliders className="w-4 h-4 text-[hsl(var(--accent))]" />
+        <div className="bg-white p-5 rounded-xl border border-[#E5E7EB] shadow-xs space-y-4">
+          <h3 className="font-semibold text-xs text-[#171717] uppercase tracking-wider flex items-center gap-2 pb-3 border-b border-[#E5E7EB]">
+            <Sliders className="w-3.5 h-3.5 text-[#635BFF]" />
             Autonomous Execution Boundaries & Safety Guards
           </h3>
 
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
             <div>
-              <label htmlFor="max-pages-input" className="block text-xs font-semibold text-[hsl(var(--muted-foreground))] mb-1">Max Pages to Explore</label>
+              <label htmlFor="max-pages-input" className="block text-xs font-semibold text-[#525866] mb-1">Max Pages to Explore</label>
               <input
                 id="max-pages-input"
                 type="number"
@@ -496,11 +498,11 @@ export const NewRun: React.FC = () => {
                 max={25}
                 value={maxPages}
                 onChange={e => setMaxPages(parseInt(e.target.value) || 10)}
-                className="w-full px-3 py-1.5 border border-[hsl(var(--border))] rounded-lg text-xs"
+                className="w-full px-3 py-1.5 border border-[#E5E7EB] rounded-lg text-xs font-mono focus:outline-none focus:ring-1 focus:ring-[#635BFF]"
               />
             </div>
             <div>
-              <label htmlFor="max-actions-input" className="block text-xs font-semibold text-[hsl(var(--muted-foreground))] mb-1">Max Actions / Run</label>
+              <label htmlFor="max-actions-input" className="block text-xs font-semibold text-[#525866] mb-1">Max Actions / Run</label>
               <input
                 id="max-actions-input"
                 type="number"
@@ -508,11 +510,11 @@ export const NewRun: React.FC = () => {
                 max={100}
                 value={maxActions}
                 onChange={e => setMaxActions(parseInt(e.target.value) || 30)}
-                className="w-full px-3 py-1.5 border border-[hsl(var(--border))] rounded-lg text-xs"
+                className="w-full px-3 py-1.5 border border-[#E5E7EB] rounded-lg text-xs font-mono focus:outline-none focus:ring-1 focus:ring-[#635BFF]"
               />
             </div>
             <div>
-              <label htmlFor="max-duration-input" className="block text-xs font-semibold text-[hsl(var(--muted-foreground))] mb-1">Max Timeout (sec)</label>
+              <label htmlFor="max-duration-input" className="block text-xs font-semibold text-[#525866] mb-1">Max Timeout (sec)</label>
               <input
                 id="max-duration-input"
                 type="number"
@@ -520,11 +522,11 @@ export const NewRun: React.FC = () => {
                 max={600}
                 value={maxDurationSec}
                 onChange={e => setMaxDurationSec(parseInt(e.target.value) || 300)}
-                className="w-full px-3 py-1.5 border border-[hsl(var(--border))] rounded-lg text-xs"
+                className="w-full px-3 py-1.5 border border-[#E5E7EB] rounded-lg text-xs font-mono focus:outline-none focus:ring-1 focus:ring-[#635BFF]"
               />
             </div>
             <div>
-              <label htmlFor="max-retries-input" className="block text-xs font-semibold text-[hsl(var(--muted-foreground))] mb-1">Clean Context Replays</label>
+              <label htmlFor="max-retries-input" className="block text-xs font-semibold text-[#525866] mb-1">Clean Context Replays</label>
               <input
                 id="max-retries-input"
                 type="number"
@@ -532,7 +534,7 @@ export const NewRun: React.FC = () => {
                 max={3}
                 value={maxRetries}
                 onChange={e => setMaxRetries(parseInt(e.target.value) || 2)}
-                className="w-full px-3 py-1.5 border border-[hsl(var(--border))] rounded-lg text-xs"
+                className="w-full px-3 py-1.5 border border-[#E5E7EB] rounded-lg text-xs font-mono focus:outline-none focus:ring-1 focus:ring-[#635BFF]"
               />
             </div>
           </div>
@@ -543,19 +545,20 @@ export const NewRun: React.FC = () => {
           <button
             type="button"
             onClick={() => {
-              setTargetUrl('http://127.0.0.1:5001/assessment');
-              setSelectedObjectives(['Functional testing', 'Form validation', 'Business-rule testing']);
+              setTargetUrl('http://127.0.0.1:5001/assesspro');
+              setSelectedObjectives(['Functional testing', 'Form validation', 'Business-rule testing', 'Negative testing']);
+              setBaselineProfile('assessment');
             }}
-            className="px-4 py-2 border border-[hsl(var(--border))] text-[hsl(var(--muted-foreground))] font-medium text-xs rounded-lg hover:bg-[hsl(var(--secondary))] transition"
+            className="px-4 py-2 border border-[#E5E7EB] text-[#525866] font-medium text-xs rounded-lg hover:bg-[#F3F4F6] transition"
           >
             Reset to Defaults
           </button>
           <button
             type="submit"
             disabled={submitting}
-            className="bg-[hsl(var(--primary))] hover:bg-[hsl(var(--primary))]/90 text-white font-medium text-xs px-5 py-2.5 rounded-lg transition shadow-xs flex items-center gap-2 disabled:opacity-50"
+            className="bg-[#635BFF] hover:bg-[#5145E5] text-white font-medium text-xs px-5 py-2.5 rounded-lg transition shadow-xs flex items-center gap-2 disabled:opacity-50"
           >
-            <PlayCircle className="w-4 h-4 text-[hsl(var(--accent))]" />
+            <PlayCircle className="w-4 h-4" />
             <span>{submitting ? 'Initializing Session...' : 'Start Autonomous Test Run'}</span>
           </button>
         </div>

@@ -365,39 +365,39 @@ export const Dashboard: React.FC = () => {
   return (
     <div className="space-y-8 max-w-7xl mx-auto pb-12">
       {/* 1. Welcome Header Banner */}
-      <div className="bg-[hsl(var(--primary))] text-white rounded-2xl p-6 md:p-8 shadow-xs flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+      <div className="bg-white border border-[#E5E7EB] text-[#171717] rounded-xl p-5 md:p-6 shadow-xs flex flex-col md:flex-row md:items-center md:justify-between gap-5">
         <div>
-          <span className="bg-white/10 text-[hsl(var(--accent))] border border-white/15 text-[11px] px-3 py-1 rounded-full font-medium uppercase tracking-wider inline-flex items-center gap-1.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-[hsl(var(--accent))] animate-pulse" />
+          <span className="bg-[#F0EFFF] text-[#635BFF] border border-[#635BFF]/20 text-[11px] px-2.5 py-0.5 rounded-full font-medium inline-flex items-center gap-1.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-[#635BFF] animate-pulse" />
             Live Playwright Verification Engine
           </span>
-          <h2 className="font-display text-3xl md:text-4xl font-normal mt-3 tracking-tight text-white">
-            Operational <span className="italic">Verification</span> Workspace
+          <h2 className="text-xl md:text-2xl font-bold mt-2 tracking-tight text-[#171717]">
+            Autonomous QA Command Center
           </h2>
-          <p className="text-white/70 text-xs md:text-sm mt-1 max-w-2xl leading-relaxed">
-            Real-time autonomous browser execution. Watch live screenshots as the AI agent navigates, fills forms, verifies invariant business rules, and highlights visual defects.
+          <p className="text-[#525866] text-xs mt-1 max-w-2xl leading-relaxed">
+            Real-time autonomous browser execution. Inspect step-by-step screenshots as the AI agent explores routes, evaluates behavioral invariant rules, and automatically annotates defects.
           </p>
         </div>
-        <div className="flex flex-wrap gap-2.5 shrink-0">
+        <div className="flex flex-wrap gap-2 shrink-0">
           <NavLink
             to="/test-cases"
-            className="bg-white/10 border border-white/20 text-white font-medium px-4 py-2 rounded-lg text-xs hover:bg-white/20 transition flex items-center gap-1.5"
+            className="bg-white border border-[#E5E7EB] text-[#525866] hover:text-[#171717] font-medium px-3.5 py-1.5 rounded-lg text-xs hover:bg-[#F3F4F6] transition flex items-center gap-1.5"
           >
             <span>All Test Cases</span>
           </NavLink>
           <NavLink
             to="/benchmark"
-            className="bg-white/10 border border-white/20 text-white font-medium px-4 py-2 rounded-lg text-xs hover:bg-white/20 transition flex items-center gap-1.5"
+            className="bg-white border border-[#E5E7EB] text-[#525866] hover:text-[#171717] font-medium px-3.5 py-1.5 rounded-lg text-xs hover:bg-[#F3F4F6] transition flex items-center gap-1.5"
           >
-            <Award className="w-3.5 h-3.5 text-[hsl(var(--accent))]" />
+            <Award className="w-3.5 h-3.5 text-[#635BFF]" />
             <span>Benchmarks</span>
           </NavLink>
           <NavLink
             to="/new-run"
-            className="bg-[hsl(var(--accent))] text-white font-medium px-4 py-2 rounded-lg text-xs hover:bg-[hsl(var(--accent))]/90 transition shadow-xs flex items-center gap-1.5"
+            className="bg-[#635BFF] text-white font-medium px-3.5 py-1.5 rounded-lg text-xs hover:bg-[#5145E5] transition shadow-xs flex items-center gap-1.5"
           >
             <PlayCircle className="w-3.5 h-3.5" />
-            <span>Advanced Config</span>
+            <span>New Test Run</span>
           </NavLink>
         </div>
       </div>
@@ -439,9 +439,9 @@ export const Dashboard: React.FC = () => {
                     setSelectedPresetId(preset.id);
                     setTargetUrlInput(preset.url);
                   }}
-                  className={`text-[11px] px-2.5 py-1 rounded-lg font-medium transition flex items-center gap-1 shrink-0 ${
+                  className={`text-[11px] px-2.5 py-1 rounded-md font-medium transition flex items-center gap-1 shrink-0 ${
                     targetUrlInput === preset.url
-                      ? 'bg-emerald-500 text-white font-semibold shadow-xs'
+                      ? 'bg-[#635BFF] text-white font-semibold shadow-xs'
                       : 'bg-slate-800 text-slate-300 hover:bg-slate-700 border border-slate-700'
                   }`}
                 >
@@ -452,8 +452,8 @@ export const Dashboard: React.FC = () => {
 
             {/* Custom URL Input & Run Button */}
             <div className="flex items-center gap-2">
-              <div className="flex-1 sm:w-64 bg-slate-800 rounded-lg border border-slate-700 px-2.5 py-1 flex items-center gap-1.5 focus-within:border-emerald-500">
-                <Globe className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+              <div className="flex-1 sm:w-64 bg-slate-800 rounded-lg border border-slate-700 px-2.5 py-1 flex items-center gap-1.5 focus-within:border-[#635BFF]">
+                <Globe className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                 <input
                   type="text"
                   value={targetUrlInput}
@@ -470,11 +470,11 @@ export const Dashboard: React.FC = () => {
                 className={`text-xs font-semibold px-3.5 py-1.5 rounded-lg transition flex items-center gap-1.5 shrink-0 shadow-xs ${
                   isLaunching
                     ? 'bg-slate-700 text-slate-400 cursor-not-allowed'
-                    : 'bg-emerald-600 hover:bg-emerald-500 text-white'
+                    : 'bg-[#635BFF] hover:bg-[#5145E5] text-white'
                 }`}
               >
                 <PlayCircle className={`w-3.5 h-3.5 ${isLaunching ? 'animate-spin' : ''}`} />
-                <span>{isLaunching ? 'Starting...' : '▶ Run Live Test'}</span>
+                <span>{isLaunching ? 'Starting...' : 'Run Live Test'}</span>
               </button>
             </div>
           </div>

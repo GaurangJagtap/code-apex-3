@@ -105,28 +105,28 @@ export const Exploration: React.FC = () => {
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
       {/* Header and Run Switcher */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-white p-5 rounded-xl border border-[#e2e8f0] shadow-sm">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-white p-5 rounded-xl border border-[#E5E7EB] shadow-xs">
         <div>
-          <h2 className="text-lg font-bold text-[#0f172a] flex items-center gap-2">
-            <Compass className="w-5 h-5 text-[#047857]" />
+          <h2 className="text-lg font-bold text-[#171717] flex items-center gap-2">
+            <Compass className="w-5 h-5 text-[#635BFF]" />
             Application Exploration & Site Map
           </h2>
-          <p className="text-xs text-[#64748b] mt-0.5">
+          <p className="text-xs text-[#525866] mt-0.5">
             Real-time visual map of pages, DOM controls, and navigation transitions discovered by the Scout Agent.
           </p>
         </div>
 
         <div className="flex items-center gap-2">
-          <label htmlFor="run-selector" className="text-xs font-semibold text-[#64748b]">Select Run:</label>
+          <label htmlFor="run-selector" className="text-xs font-semibold text-[#525866]">Select Run:</label>
           <select
             id="run-selector"
             value={selectedRunId}
             onChange={e => handleSelectRun(e.target.value)}
-            className="text-xs font-mono border border-[#cbd5e1] rounded-lg px-3 py-1.5 bg-white text-[#0f172a] focus:outline-none focus:border-[#047857]"
+            className="text-xs font-mono border border-[#E5E7EB] rounded-lg px-3 py-1.5 bg-white text-[#171717] focus:outline-none focus:ring-1 focus:ring-[#635BFF]"
           >
             {runs.map(r => (
               <option key={r.id} value={r.id}>
-                {r.id} ({r.status}) — {r.target_url}
+                {r.id.substring(0, 8)} ({r.status}) — {r.target_url}
               </option>
             ))}
           </select>
@@ -134,22 +134,22 @@ export const Exploration: React.FC = () => {
       </div>
 
       {selectedRun && (
-        <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 bg-emerald-50 border border-emerald-200 rounded-xl p-4 text-xs">
+        <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 bg-[#F0EFFF]/50 border border-[#635BFF]/30 rounded-xl p-4 text-xs">
           <div>
-            <span className="text-[#065f46] font-semibold">Target Origin:</span>
-            <div className="font-mono text-[#0f172a] truncate mt-0.5">{selectedRun.target_url}</div>
+            <span className="text-[#635BFF] font-semibold">Target Origin:</span>
+            <div className="font-mono text-[#171717] truncate mt-0.5">{selectedRun.target_url}</div>
           </div>
           <div>
-            <span className="text-[#065f46] font-semibold">Status:</span>
-            <div className="font-bold text-[#047857] capitalize mt-0.5">{selectedRun.status}</div>
+            <span className="text-[#635BFF] font-semibold">Status:</span>
+            <div className="font-bold text-[#171717] capitalize mt-0.5">{selectedRun.status}</div>
           </div>
           <div>
-            <span className="text-[#065f46] font-semibold">Pages Discovered:</span>
-            <div className="text-[#0f172a] font-bold mt-0.5">{siteMap?.total_nodes || 0}</div>
+            <span className="text-[#635BFF] font-semibold">Pages Discovered:</span>
+            <div className="text-[#171717] font-bold mt-0.5">{siteMap?.total_nodes || 0}</div>
           </div>
           <div>
-            <span className="text-[#065f46] font-semibold">Navigation Transitions:</span>
-            <div className="text-[#0f172a] font-bold mt-0.5">{siteMap?.total_edges || 0}</div>
+            <span className="text-[#635BFF] font-semibold">Navigation Transitions:</span>
+            <div className="text-[#171717] font-bold mt-0.5">{siteMap?.total_edges || 0}</div>
           </div>
         </div>
       )}
@@ -158,17 +158,17 @@ export const Exploration: React.FC = () => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Discovered Site Map Graph & Nodes */}
         <div className="lg:col-span-2 space-y-4">
-          <div className="bg-white p-5 rounded-xl border border-[#e2e8f0] shadow-sm">
+          <div className="bg-white p-5 rounded-xl border border-[#E5E7EB] shadow-xs">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="font-semibold text-sm text-[#0f172a] flex items-center gap-2">
-                <Network className="w-4 h-4 text-[#047857]" />
+              <h3 className="font-semibold text-sm text-[#171717] flex items-center gap-2">
+                <Network className="w-4 h-4 text-[#635BFF]" />
                 Discovered Application Topology
               </h3>
-              <span className="text-xs text-[#64748b]">Click a page to inspect discovered controls</span>
+              <span className="text-xs text-[#525866]">Click a page to inspect discovered controls</span>
             </div>
 
             {(!siteMap || siteMap.nodes.length === 0) ? (
-              <div className="p-8 text-center text-sm text-[#94a3b8]">
+              <div className="p-8 text-center text-sm text-[#525866]">
                 {loading ? 'Scout Agent is exploring pages...' : 'No exploration data found for this run.'}
               </div>
             ) : (
@@ -182,28 +182,28 @@ export const Exploration: React.FC = () => {
                       onClick={() => setSelectedNode(node)}
                       className={`p-4 rounded-xl border text-left transition-all ${
                         isSelected
-                          ? 'border-[#047857] bg-[#ecfdf5] shadow-sm ring-1 ring-[#047857]'
-                          : 'border-[#e2e8f0] bg-white hover:border-[#cbd5e1]'
+                          ? 'border-[#635BFF] bg-[#F0EFFF]/60 shadow-xs ring-1 ring-[#635BFF]'
+                          : 'border-[#E5E7EB] bg-white hover:border-[#635BFF]/40'
                       }`}
                     >
                       <div className="flex items-start justify-between">
-                        <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-emerald-100 text-emerald-800">
+                        <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200">
                           {node.status}
                         </span>
-                        <span className="text-xs text-[#64748b] flex items-center gap-1">
-                          <MousePointer className="w-3 h-3 text-[#047857]" />
+                        <span className="text-xs text-[#525866] flex items-center gap-1">
+                          <MousePointer className="w-3 h-3 text-[#635BFF]" />
                           {node.controls_count} controls
                         </span>
                       </div>
-                      <div className="font-semibold text-sm text-[#0f172a] mt-2 truncate">
+                      <div className="font-semibold text-sm text-[#171717] mt-2 truncate">
                         {node.label}
                       </div>
-                      <div className="font-mono text-[11px] text-[#64748b] truncate mt-0.5">
+                      <div className="font-mono text-[11px] text-[#525866] truncate mt-0.5">
                         {node.url}
                       </div>
 
                       {node.associated_tests?.length > 0 && (
-                        <div className="mt-2 pt-2 border-t border-[#e2e8f0] text-[11px] text-[#065f46]">
+                        <div className="mt-2 pt-2 border-t border-[#E5E7EB] text-[11px] text-[#635BFF]">
                           <strong>Targeted by:</strong> {node.associated_tests[0]}
                         </div>
                       )}
@@ -216,15 +216,15 @@ export const Exploration: React.FC = () => {
 
           {/* Selected Page Control Inspector */}
           {selectedNode && (
-            <div className="bg-white p-5 rounded-xl border border-[#e2e8f0] shadow-sm">
-              <h4 className="font-semibold text-sm text-[#0f172a] mb-2 flex items-center gap-2">
-                <FileCode className="w-4 h-4 text-[#047857]" />
+            <div className="bg-white p-5 rounded-xl border border-[#E5E7EB] shadow-xs">
+              <h4 className="font-semibold text-sm text-[#171717] mb-2 flex items-center gap-2">
+                <FileCode className="w-4 h-4 text-[#635BFF]" />
                 Interactive Controls Discovered on: <span className="font-mono text-xs">{selectedNode.url}</span>
               </h4>
-              <p className="text-xs text-[#64748b] mb-3">
+              <p className="text-xs text-[#525866] mb-3">
                 Accessibility roles, buttons, and form inputs recorded by Scout DOM inspection.
               </p>
-              <div className="bg-[#f8fafc] border border-[#e2e8f0] rounded-lg p-3 max-h-48 overflow-y-auto font-mono text-xs text-[#334155] space-y-1">
+              <div className="bg-[#F8F9FB] border border-[#E5E7EB] rounded-lg p-3 max-h-48 overflow-y-auto font-mono text-xs text-[#171717] space-y-1">
                 <div>Route: <code>{selectedNode.url}</code></div>
                 <div>Title: <code>{selectedNode.label}</code></div>
                 <div>Interactive Controls Count: <code>{selectedNode.controls_count}</code></div>
@@ -237,18 +237,18 @@ export const Exploration: React.FC = () => {
         </div>
 
         {/* Live Exploration Event Timeline */}
-        <div className="bg-white p-5 rounded-xl border border-[#e2e8f0] shadow-sm flex flex-col h-[600px]">
-          <div className="flex items-center justify-between pb-3 border-b border-[#e2e8f0] shrink-0">
-            <h3 className="font-semibold text-sm text-[#0f172a] flex items-center gap-2">
-              <Clock className="w-4 h-4 text-[#047857]" />
+        <div className="bg-white p-5 rounded-xl border border-[#E5E7EB] shadow-xs flex flex-col h-[600px]">
+          <div className="flex items-center justify-between pb-3 border-b border-[#E5E7EB] shrink-0">
+            <h3 className="font-semibold text-sm text-[#171717] flex items-center gap-2">
+              <Clock className="w-4 h-4 text-[#635BFF]" />
               Agent Event Stream
             </h3>
-            <span className="text-[11px] text-[#64748b]">{events.length} events</span>
+            <span className="text-[11px] text-[#525866]">{events.length} events</span>
           </div>
 
           <div className="flex-1 overflow-y-auto py-3 space-y-3">
             {events.length === 0 ? (
-              <div className="p-6 text-center text-xs text-[#94a3b8]">
+              <div className="p-6 text-center text-xs text-[#525866]">
                 No orchestration events recorded yet.
               </div>
             ) : (
@@ -267,18 +267,18 @@ export const Exploration: React.FC = () => {
                           : isVerifier
                           ? 'bg-amber-500'
                           : isTester
-                          ? 'bg-blue-500'
+                          ? 'bg-[#635BFF]'
                           : 'bg-emerald-500'
                       }`}
                     />
-                    <div className="flex-1 bg-[#f8fafc] p-2.5 rounded-lg border border-[#e2e8f0]">
-                      <div className="flex items-center justify-between text-[10px] text-[#64748b] mb-1">
-                        <span className="font-bold uppercase tracking-wider text-[#065f46]">
+                    <div className="flex-1 bg-[#F8F9FB] p-2.5 rounded-lg border border-[#E5E7EB]">
+                      <div className="flex items-center justify-between text-[10px] text-[#525866] mb-1">
+                        <span className="font-bold uppercase tracking-wider text-[#635BFF]">
                           {evt.agent_role} &bull; {evt.event_type}
                         </span>
                         <span className="font-mono">{evt.timestamp.substring(11, 19)}</span>
                       </div>
-                      <div className="text-[#0f172a] font-medium">{evt.message}</div>
+                      <div className="text-[#171717] font-medium">{evt.message}</div>
                     </div>
                   </div>
                 );

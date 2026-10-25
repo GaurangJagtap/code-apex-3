@@ -145,16 +145,15 @@ export const Layout: React.FC = () => {
                   key={item.path}
                   to={item.path}
                   title={item.label}
-                  className={`w-11 h-11 rounded-xl flex items-center justify-center transition-all group relative ${
+                  className={`w-10 h-10 rounded-lg flex items-center justify-center transition-all group relative ${
                     isActive
-                      ? 'bg-[hsl(var(--primary))] text-white shadow-sm ring-2 ring-[hsl(var(--accent))]/40'
-                      : 'text-[hsl(var(--muted-foreground))] hover:bg-[hsl(var(--secondary))] hover:text-[hsl(var(--foreground))]'
+                      ? 'bg-[#F0EFFF] text-[#635BFF] font-semibold ring-1 ring-[#635BFF]/30'
+                      : 'text-[#525866] hover:bg-[#F3F4F6] hover:text-[#171717]'
                   }`}
                 >
-                  <Icon className={`w-5 h-5 ${isActive ? 'text-[hsl(var(--accent))]' : 'group-hover:scale-110 transition-transform'}`} />
-                  {/* Subtle active pill indicator on left */}
+                  <Icon className={`w-4 h-4 ${isActive ? 'text-[#635BFF]' : 'group-hover:scale-105 transition-transform'}`} />
                   {isActive && (
-                    <span className="absolute -left-1 w-1.5 h-5 rounded-r-full bg-[hsl(var(--accent))]" />
+                    <span className="absolute -left-1 w-1 h-4 rounded-r bg-[#635BFF]" />
                   )}
                 </NavLink>
               );
@@ -166,11 +165,11 @@ export const Layout: React.FC = () => {
                 to={item.path}
                 className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-medium transition-all ${
                   isActive
-                    ? 'bg-[hsl(var(--secondary))] text-[hsl(var(--primary))] font-semibold border border-[hsl(var(--border))] shadow-xs'
-                    : 'text-[hsl(var(--muted-foreground))] hover:bg-[hsl(var(--muted))] hover:text-[hsl(var(--foreground))]'
+                    ? 'bg-[#F0EFFF] text-[#635BFF] font-semibold ring-1 ring-[#635BFF]/20 shadow-xs'
+                    : 'text-[#525866] hover:bg-[#F3F4F6] hover:text-[#171717]'
                 }`}
               >
-                <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-[hsl(var(--accent))]' : ''}`} />
+                <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-[#635BFF]' : 'text-[#858B98]'}`} />
                 <span className="truncate">{item.label}</span>
               </NavLink>
             );
@@ -178,27 +177,27 @@ export const Layout: React.FC = () => {
         </nav>
 
         {/* Operating Environment Status */}
-        <div className={`border-t border-[hsl(var(--border))] bg-[hsl(var(--secondary))]/40 ${isCollapsed ? 'p-2 flex flex-col items-center gap-2' : 'p-3.5'}`}>
+        <div className={`border-t border-[#E5E7EB] bg-[#F8F9FB] ${isCollapsed ? 'p-2 flex flex-col items-center gap-2' : 'p-3'}`}>
           {isCollapsed ? (
             <>
               <div
                 title={`Engine Mode: ${config?.demo_mode_active ? 'Deterministic' : 'Autonomous AI'}`}
-                className={`w-8 h-8 rounded-lg flex items-center justify-center border cursor-default ${
+                className={`w-7 h-7 rounded-md flex items-center justify-center border cursor-default ${
                   config?.demo_mode_active
-                    ? 'bg-amber-50 text-amber-700 border-amber-300'
-                    : 'bg-emerald-50 text-emerald-700 border-emerald-300'
+                    ? 'bg-amber-50 text-amber-700 border-amber-200'
+                    : 'bg-emerald-50 text-emerald-700 border-emerald-200'
                 }`}
               >
-                <Cpu className="w-4 h-4" />
+                <Cpu className="w-3.5 h-3.5" />
               </div>
               <a
                 href="http://127.0.0.1:5001"
                 target="_blank"
                 rel="noreferrer"
                 title="Open Sample Apps (Port 5001)"
-                className="w-8 h-8 rounded-lg flex items-center justify-center text-[hsl(var(--accent))] hover:bg-white border border-transparent hover:border-[hsl(var(--border))] transition"
+                className="w-7 h-7 rounded-md flex items-center justify-center text-[#635BFF] hover:bg-white border border-transparent hover:border-[#E5E7EB] transition"
               >
-                <ExternalLink className="w-4 h-4" />
+                <ExternalLink className="w-3.5 h-3.5" />
               </a>
               <button
                 type="button"
@@ -280,24 +279,24 @@ export const Layout: React.FC = () => {
               href="http://127.0.0.1:5001"
               target="_blank"
               rel="noreferrer"
-              className="hidden sm:flex items-center gap-1 text-xs text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] bg-[hsl(var(--secondary))] px-3 py-1.5 rounded-lg border border-[hsl(var(--border))] transition"
+              className="hidden sm:flex items-center gap-1.5 text-xs text-[#525866] hover:text-[#171717] bg-white hover:bg-[#F3F4F6] px-3 py-1.5 rounded-lg border border-[#E5E7EB] transition"
             >
-              <span>Target Sites (:5001)</span>
-              <ExternalLink className="w-3 h-3 text-[hsl(var(--accent))]" />
+              <span>Target Apps (5001)</span>
+              <ExternalLink className="w-3 h-3 text-[#635BFF]" />
             </a>
 
             <Link
               to="/new-run"
-              className="flex items-center gap-1.5 bg-[hsl(var(--primary))] hover:bg-[hsl(var(--primary))]/90 text-[hsl(var(--primary-foreground))] px-3.5 py-1.5 rounded-full text-xs font-semibold transition shadow-xs"
+              className="flex items-center gap-1.5 bg-[#635BFF] hover:bg-[#5145E5] text-white px-3.5 py-1.5 rounded-lg text-xs font-semibold transition shadow-xs"
             >
-              <PlayCircle className="w-3.5 h-3.5 text-[hsl(var(--accent))]" />
+              <PlayCircle className="w-3.5 h-3.5" />
               <span>Launch New Run</span>
             </Link>
           </div>
         </header>
 
         {/* Routed Page Content */}
-        <main className="flex-1 overflow-y-auto p-6 md:p-8 bg-[hsl(var(--background))]">
+        <main className="flex-1 overflow-y-auto p-6 md:p-8 bg-[#F8F9FB]">
           <Outlet />
         </main>
       </div>

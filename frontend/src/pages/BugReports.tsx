@@ -135,23 +135,23 @@ export const BugReports: React.FC = () => {
       </div>
 
       {/* Filter Bar */}
-      <div className="bg-white rounded-xl border border-[hsl(var(--border))] shadow-xs p-4 space-y-3">
+      <div className="bg-white rounded-xl border border-[#E5E7EB] shadow-xs p-4 space-y-3">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
           <div className="relative md:col-span-2">
-            <Search className="w-3.5 h-3.5 text-[hsl(var(--muted-foreground))] absolute left-3 top-2.5" />
+            <Search className="w-3.5 h-3.5 text-[#858B98] absolute left-3 top-2.5" />
             <input
               type="text"
               placeholder="Search finding title, ID, category, or URL..."
               value={searchTerm}
               onChange={e => setSearchTerm(e.target.value)}
-              className="text-xs pl-8 pr-3 py-1.5 border border-[hsl(var(--border))] rounded-lg bg-[hsl(var(--secondary))]/30 w-full focus:outline-none focus:ring-1 focus:ring-[hsl(var(--ring))]"
+              className="text-xs pl-8 pr-3 py-1.5 border border-[#E5E7EB] rounded-lg bg-[#F8F9FB] w-full focus:outline-none focus:ring-1 focus:ring-[#635BFF] text-[#171717]"
             />
           </div>
 
           <select
             value={severityFilter}
             onChange={e => setSeverityFilter(e.target.value)}
-            className="text-xs border border-[hsl(var(--border))] rounded-lg px-2.5 py-1.5 bg-[hsl(var(--secondary))]/30 text-[hsl(var(--foreground))] focus:outline-none focus:ring-1 focus:ring-[hsl(var(--ring))]"
+            className="text-xs border border-[#E5E7EB] rounded-lg px-2.5 py-1.5 bg-[#F8F9FB] text-[#171717] focus:outline-none focus:ring-1 focus:ring-[#635BFF]"
           >
             <option value="All">All Severities</option>
             <option value="Critical">Critical</option>
@@ -163,7 +163,7 @@ export const BugReports: React.FC = () => {
           <select
             value={statusFilter}
             onChange={e => setStatusFilter(e.target.value)}
-            className="text-xs border border-[hsl(var(--border))] rounded-lg px-2.5 py-1.5 bg-[hsl(var(--secondary))]/30 text-[hsl(var(--foreground))] focus:outline-none focus:ring-1 focus:ring-[hsl(var(--ring))]"
+            className="text-xs border border-[#E5E7EB] rounded-lg px-2.5 py-1.5 bg-[#F8F9FB] text-[#171717] focus:outline-none focus:ring-1 focus:ring-[#635BFF]"
           >
             <option value="All">All Verification States</option>
             <option value="Confirmed">Confirmed</option>
@@ -174,16 +174,16 @@ export const BugReports: React.FC = () => {
         </div>
 
         {/* 10 Categories Bar */}
-        <div className="flex items-center gap-1.5 overflow-x-auto pt-2 border-t border-[hsl(var(--border))] text-xs">
-          <span className="text-[10px] font-semibold text-[hsl(var(--muted-foreground))] uppercase px-2 shrink-0">
+        <div className="flex items-center gap-1.5 overflow-x-auto pt-2 border-t border-[#E5E7EB] text-xs">
+          <span className="text-[10px] font-semibold text-[#858B98] uppercase px-2 shrink-0">
             Taxonomy:
           </span>
           <button
             onClick={() => setCategoryFilter('All')}
             className={`px-2.5 py-1 rounded-md text-xs font-medium whitespace-nowrap transition ${
               categoryFilter === 'All'
-                ? 'bg-[hsl(var(--primary))] text-white'
-                : 'text-[hsl(var(--muted-foreground))] hover:bg-[hsl(var(--secondary))]'
+                ? 'bg-[#F0EFFF] text-[#635BFF] font-semibold ring-1 ring-[#635BFF]/30'
+                : 'text-[#525866] hover:bg-[#F3F4F6] hover:text-[#171717]'
             }`}
           >
             All Categories ({bugs.length})
@@ -197,8 +197,8 @@ export const BugReports: React.FC = () => {
                 onClick={() => setCategoryFilter(cat)}
                 className={`px-2.5 py-1 rounded-md text-xs font-medium whitespace-nowrap transition ${
                   categoryFilter === cat
-                    ? 'bg-[hsl(var(--primary))] text-white'
-                    : 'text-[hsl(var(--muted-foreground))] hover:bg-[hsl(var(--secondary))]'
+                    ? 'bg-[#F0EFFF] text-[#635BFF] font-semibold ring-1 ring-[#635BFF]/30'
+                    : 'text-[#525866] hover:bg-[#F3F4F6] hover:text-[#171717]'
                 }`}
               >
                 {cat.split(' ')[0]} ({count})

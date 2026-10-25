@@ -294,8 +294,8 @@ export const TestCases: React.FC = () => {
             onClick={() => setCategoryFilter('all')}
             className={`px-2.5 py-1 rounded-md text-xs font-medium whitespace-nowrap transition ${
               categoryFilter === 'all'
-                ? 'bg-[hsl(var(--primary))] text-white'
-                : 'text-[hsl(var(--muted-foreground))] hover:bg-[hsl(var(--secondary))]'
+                ? 'bg-[#635BFF] text-white'
+                : 'text-[hsl(var(--muted-foreground))] hover:bg-[#F0EFFF] hover:text-[#635BFF]'
             }`}
           >
             All Categories ({testCases.length})
@@ -309,8 +309,8 @@ export const TestCases: React.FC = () => {
                 onClick={() => setCategoryFilter(cat)}
                 className={`px-2.5 py-1 rounded-md text-xs font-medium whitespace-nowrap transition ${
                   categoryFilter === cat
-                    ? 'bg-[hsl(var(--primary))] text-white'
-                    : 'text-[hsl(var(--muted-foreground))] hover:bg-[hsl(var(--secondary))]'
+                    ? 'bg-[#635BFF] text-white'
+                    : 'text-[hsl(var(--muted-foreground))] hover:bg-[#F0EFFF] hover:text-[#635BFF]'
                 }`}
               >
                 {cat.split(' ')[0]} ({count})
