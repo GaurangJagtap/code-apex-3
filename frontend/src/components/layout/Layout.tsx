@@ -109,11 +109,8 @@ export const Layout: React.FC = () => {
                   <Sparkles className="w-4 h-4 text-white" />
                 </div>
                 <div>
-                  <div className="font-bold text-sm tracking-tight text-[#0F172A] flex items-center gap-1.5">
-                    <span>Autonomous QA</span>
-                    <span className="text-[9px] font-extrabold uppercase bg-[#F0EFFF] text-[#635BFF] px-1.5 py-0.5 rounded border border-[#635BFF]/20">
-                      v3.0
-                    </span>
+                  <div className="font-bold text-sm tracking-tight text-[#0F172A]">
+                    Autonomous QA
                   </div>
                   <div className="text-[11px] font-medium text-[#64748B]">iMocha IM-02 Platform</div>
                 </div>

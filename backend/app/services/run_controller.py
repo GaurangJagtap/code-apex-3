@@ -383,19 +383,22 @@ class RunController:
 
                 # Register Screenshots as Artifacts
                 for art_id in exec_result["screenshot_ids"]:
-                    fname = f"{art_id}.png"
-                    # Determine specific artifact sub-type if matching annotated
-                    art_type = "screenshot_annotated" if "annotated" in art_id or art_id == exec_result.get("annotated_screenshot_id") else "screenshot"
-                    art_record = Artifact(
-                        id=art_id,
-                        run_id=run_id,
-                        test_id=tc.id,
-                        type=art_type,
-                        file_path=os.path.join(settings.ARTIFACTS_DIR, fname),
-                        file_name=fname,
-                        content_type="image/png"
-                    )
-                    db.add(art_record)
+                    existing_art = db.query(Artifact).filter(Artifact.id == art_id).first()
+                    if not existing_art:
+                        fname = f"{art_id}.png"
+                        # Determine specific artifact sub-type if matching annotated
+                        art_type = "screenshot_annotated" if "annotated" in art_id or art_id == exec_result.get("annotated_screenshot_id") else "screenshot"
+                        art_record = Artifact(
+                            id=art_id,
+                            run_id=run_id,
+                            test_id=tc.id,
+                            type=art_type,
+                            file_path=os.path.join(settings.ARTIFACTS_DIR, fname),
+                            file_name=fname,
+                            content_type="image/png"
+                        )
+                        db.add(art_record)
+                db.commit()
 
                 if exec_result["status"] == "Passed":
                     passed_cnt += 1
@@ -554,6 +557,10 @@ class RunController:
             )
 
         except Exception as e:
+            try:
+                db.rollback()
+            except Exception:
+                pass
             run.status = "failed"
             run.error_summary = str(e)
             run.end_time = get_utc_now()
